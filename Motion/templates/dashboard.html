@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Motion{% endblock %}
+
+{% block content %}
+<div class="welcome-screen">
+    <div class="welcome-content">
+        <h1>Welcome back, {{ user_name }}! 👋</h1>
+        <p>Create your workspace</p>
+        <div class="creation-buttons">
+            <button class="create-btn" onclick="createNewPage()">
+                <span class="btn-icon">📄</span>
+                <span class="btn-text">
+                    <strong>New Page</strong>
+                    <small>Write and organize notes</small>
+                </span>
+            </button>
+            <button class="create-btn" onclick="createNewDatabase()">
+                <span class="btn-icon">📊</span>
+                <span class="btn-text">
+                    <strong>New Database</strong>
+                    <small>Tasks, projects, lists</small>
+                </span>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}

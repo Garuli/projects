@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Chat - Motion{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <div class="chat-header">
+        <h2 class="chat-title">{{ chat.title }}</h2>
+        <button class="icon-btn" id="newChatBtn" type="button">New Chat</button>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+        {% for msg in messages %}
+        <div class="chat-message {{ msg.role }}">
+            <div class="chat-bubble">{{ msg.content }}</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <form class="chat-input" id="chatForm">
+        <textarea id="chatInput" placeholder="Ask anything..." rows="3"></textarea>
+        <button type="submit" class="new-page-btn chat-send-btn" id="chatSendBtn">Send</button>
+    </form>
+</div>
+
+<script>
+    const chatId = {{ chat.id }};
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+{% endblock %}

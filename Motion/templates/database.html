@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}{{ database.title }} - Motion{% endblock %}
+
+{% block content %}
+<div class="database-container">
+    <div class="database-header">
+        <input type="text" 
+               id="databaseTitle" 
+               class="database-title-input" 
+               value="{{ database.title }}"
+               placeholder="Untitled Database">
+        
+        <div class="view-switcher">
+            <button class="view-btn active" data-view="table" title="Table View">
+                📊 Table
+            </button>
+            <button class="view-btn" data-view="board" title="Kanban Board">
+                🧩 Board
+            </button>
+            <button class="view-btn" data-view="calendar" title="Calendar View">
+                📅 Calendar
+            </button>
+            <button class="view-btn" data-view="list" title="List View">
+                📋 List
+            </button>
+        </div>
+        
+        <div class="database-actions">
+            <button class="icon-btn" id="addItemBtn" title="Add new item">
+                ➕ New
+            </button>
+            <button class="icon-btn" id="filterBtn" title="Filter">
+                🔍 Filter
+            </button>
+            <button class="icon-btn" id="sortBtn" title="Sort">
+                ↕️ Sort
+            </button>
+            <button class="icon-btn" id="addPropertyBtn" title="Add Property">
+                ➕ Property
+            </button>
+            <button class="icon-btn delete-btn" id="deleteDatabaseBtn" title="Delete Database">
+                🗑️ Delete
+            </button>
+        </div>
+    </div>
+    
+    <!-- Filter Panel -->
+    <div class="filter-panel" id="filterPanel">
+        <div class="filter-header">
+            <h3>Filters</h3>
+            <button class="close-btn" onclick="closeFilterPanel()">✕</button>
+        </div>
+        <div class="filter-rules" id="filterRules">
+            <!-- Filter rules will be added here -->
+        </div>
+        <button class="add-filter-btn" onclick="addFilterRule()">+ Add Filter</button>
+        <div class="filter-actions">
+            <button class="btn-apply" onclick="applyFilters()">Apply</button>
+            <button class="btn-clear" onclick="clearFilters()">Clear All</button>
+        </div>
+    </div>
+    
+    <!-- Sort Panel -->
+    <div class="sort-panel" id="sortPanel">
+        <div class="sort-header">
+            <h3>Sort</h3>
+            <button class="close-btn" onclick="closeSortPanel()">✕</button>
+        </div>
+        <div class="sort-options">
+            <label>Sort by:</label>
+            <select id="sortProperty">
+                <option value="">None</option>
+                {% for prop in properties %}
+                <option value="{{ prop.name }}">{{ prop.name }}</option>
+                {% endfor %}
+            </select>
+            <label>Order:</label>
+            <select id="sortOrder">
+                <option value="asc">Ascending</option>
+                <option value="desc">Descending</option>
+            </select>
+        </div>
+        <button class="btn-apply" onclick="applySort()">Apply Sort</button>
+    </div>
+    
+    <!-- Add Property Modal -->
+    <div class="modal" id="addPropertyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Property</h2>
+                <button class="modal-close" onclick="closeAddPropertyModal()">✕</button>
+            </div>
+            <form id="addPropertyForm">
+                <div class="form-group">
+                    <label>Property Name</label>
+                    <input type="text" name="name" class="form-input" placeholder="e.g., Email, Phone, URL" required>
+                </div>
+                <div class="form-group">
+                    <label>Property Type</label>
+                    <select name="type" class="form-input" id="propertyTypeSelect">
+                        <option value="text">Text</option>
+                        <option value="number">Number</option>
+                        <option value="select">Select (dropdown)</option>
+                        <option value="multi_select">Multi-Select</option>
+                        <option value="date">Date</option>
+                        <option value="checkbox">Checkbox</option>
+                        <option value="url">URL</option>
+                        <option value="email">Email</option>
+                        <option value="phone">Phone</option>
+                        <option value="rating">Rating (1-5 stars)</option>
+                    </select>
+                </div>
+                <div class="form-group" id="optionsGroup" style="display: none;">
+                    <label>Options (comma-separated)</label>
+                    <input type="text" id="propertyOptions" class="form-input" placeholder="e.g., Option1, Option2, Option3">
+                    <small>For Select and Multi-Select types</small>
+                </div>
+                <button type="submit" class="submit-btn">Add Property</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Table View -->
+    <div class="database-view table-view active" id="tableView">
+        <table class="database-table">
+            <thead>
+                <tr>
+                    {% for prop in properties %}
+                    <th class="property-header {{ prop.type }}">
+                        {{ prop.name }}
+                        <span class="property-type">{{ prop.type }}</span>
+                    </th>
+                    {% endfor %}
+                    <th class="actions-header"></th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                {% for item in items %}
+                <tr class="database-row" data-item-id="{{ item.id }}">
+                    {% for prop in properties %}
+                    <td class="property-cell {{ prop.type }}" data-property="{{ prop.name }}">
+                        {% if prop.type == 'title' %}
+                            <input type="text" 
+                                   class="cell-input title-input" 
+                                   value="{{ item.properties.get(prop.name, '') }}"
+                                   placeholder="Untitled">
+                        {% elif prop.type == 'select' %}
+                            <select class="cell-select status-select">
+                                <option value="">Select...</option>
+                                {% for option in prop.options %}
+                                <option value="{{ option }}" 
+                                        {% if item.properties.get(prop.name) == option %}selected{% endif %}>
+                                    {{ option }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        {% elif prop.type == 'date' %}
+                            <input type="date" 
+                                   class="cell-input date-input" 
+                                   value="{{ item.properties.get(prop.name, '') }}">
+                        {% else %}
+                            <input type="text" 
+                                   class="cell-input" 
+                                   value="{{ item.properties.get(prop.name, '') }}">
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                    <td class="actions-cell">
+                        <button class="cell-action-btn delete-item" title="Delete">🗑️</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Kanban Board View -->
+    <div class="database-view board-view" id="boardView">
+        <div class="kanban-board">
+            {% set status_prop = properties|selectattr('name', 'equalto', 'Status')|first %}
+            {% if status_prop %}
+                {% for status in status_prop.options %}
+                <div class="kanban-column" data-status="{{ status }}">
+                    <div class="column-header">
+                        <h3>{{ status }}</h3>
+                        <span class="item-count">0</span>
+                    </div>
+                    <div class="column-items" data-status="{{ status }}">
+                        <!-- Items will be dynamically added here -->
+                    </div>
+                    <button class="add-card-btn" data-status="{{ status }}">
+                        ➕ Add card
+                    </button>
+                </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Calendar View -->
+    <div class="database-view calendar-view" id="calendarView">
+        <div class="calendar-header">
+            <button class="calendar-nav" id="prevMonth">◀</button>
+            <h3 id="calendarMonth">January 2025</h3>
+            <button class="calendar-nav" id="nextMonth">▶</button>
+        </div>
+        <div class="calendar-grid" id="calendarGrid">
+            <!-- Calendar will be dynamically generated -->
+        </div>
+    </div>
+    
+    <!-- List View -->
+    <div class="database-view list-view" id="listView">
+        <div class="list-container" id="listContainer">
+            <!-- List items will be dynamically added -->
+        </div>
+    </div>
+</div>
+
+<!-- Add Item Modal -->
+<div class="modal" id="addItemModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>New Item</h2>
+            <button class="modal-close" onclick="closeAddItemModal()">✕</button>
+        </div>
+        <form id="addItemForm">
+            {% for prop in properties %}
+            <div class="form-group">
+                <label>{{ prop.name }}</label>
+                {% if prop.type == 'title' %}
+                    <input type="text" name="{{ prop.name }}" class="form-input" placeholder="Enter {{ prop.name|lower }}">
+                {% elif prop.type == 'select' %}
+                    <select name="{{ prop.name }}" class="form-input">
+                        <option value="">Select...</option>
+                        {% for option in prop.options %}
+                        <option value="{{ option }}">{{ option }}</option>
+                        {% endfor %}
+                    </select>
+                {% elif prop.type == 'date' %}
+                    <input type="date" name="{{ prop.name }}" class="form-input">
+                {% else %}
+                    <input type="text" name="{{ prop.name }}" class="form-input">
+                {% endif %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="submit-btn">Create Item</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    const databaseId = {{ database.id }};
+    const properties = {{ properties|tojson }};
+    const items = {{ items|tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/database.js') }}"></script>
+{% endblock %}

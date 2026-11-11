@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page.title }} - Notion Clone{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <input type="text" 
+               id="pageTitle" 
+               class="page-title-input" 
+               value="{{ page.title }}"
+               placeholder="Untitled">
+        
+        <div class="page-actions">
+            <button class="icon-btn ai-btn" id="aiMenuBtn" title="AI Features">
+                &#129302; AI
+            </button>
+            <button class="icon-btn" id="exportBtn" title="Export as Markdown (Ctrl+E)">
+                &#11015;&#65039; Export
+            </button>
+            <button class="icon-btn delete-btn" id="deleteBtn" title="Delete page">
+                &#128465;&#65039; Delete
+            </button>
+
+            <!-- AI Features Menu -->
+            <div class="ai-menu" id="aiMenu">
+                <button class="ai-menu-item" onclick="aiImprove()">
+                    Enhance Writing
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="tags-container">
+        <div class="tags-display" id="tagsDisplay">
+            {% for tag in tags %}
+            <span class="tag">{{ tag }}</span>
+            {% endfor %}
+        </div>
+        <input type="text" 
+               id="tagsInput" 
+               class="tags-input" 
+               placeholder="Add tags (comma-separated)...">
+    </div>
+
+<div class="editor-container">
+        <div class="editor-toolbar">
+            <button class="toolbar-btn" onclick="togglePreview()" title="Toggle preview (Ctrl+P)">
+                👁️ Preview
+            </button>
+            <span class="save-indicator" id="saveIndicator">Saved</span>
+        </div>
+        
+        <div class="editor-wrapper">
+            <textarea id="editor" 
+                      class="editor"
+                      placeholder="Start writing... (Markdown supported)">{{ page.content }}</textarea>
+            
+            <div id="preview" class="preview hidden"></div>
+        </div>
+        
+        <div class="markdown-help">
+            <details>
+                <summary>Markdown Help</summary>
+                <div class="help-content">
+                    <p><strong># Heading 1</strong> → Heading</p>
+                    <p><strong>## Heading 2</strong> → Subheading</p>
+                    <p><strong>**bold**</strong> → <strong>bold</strong></p>
+                    <p><strong>*italic*</strong> → <em>italic</em></p>
+                    <p><strong>- [ ] Task</strong> → Checklist</p>
+                    <p><strong>```code```</strong> → Code block</p>
+                    <p><strong>| Col | Col |<br>| --- | --- |</strong> → Table</p>
+                </div>
+            </details>
+        </div>
+    </div>
+</div>
+
+<script>
+    const pageId = {{ page.id }};
+</script>
+{% endblock %}

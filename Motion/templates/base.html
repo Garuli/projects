@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Motion{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/database.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h1>📝 Motion</h1>
+                <div class="header-actions">
+                    <button class="theme-toggle" id="themeToggle" title="Toggle dark mode (Ctrl+D)">
+                        🌙
+                    </button>
+                    <a href="{{ url_for('logout') }}" class="logout-btn" title="Logout">
+                        🚪
+                    </a>
+                </div>
+            </div>
+            
+            <div class="sidebar-search">
+                <input type="text" id="searchInput" placeholder="Search pages..." class="search-input">
+                <div id="searchResults" class="search-results"></div>
+            </div>
+            
+            <button class="new-page-btn" id="newPageBtn">+ New Page</button>
+            <button class="new-page-btn database-btn" id="newDatabaseBtn">+ New Database</button>
+            <button class="new-page-btn chat-btn" onclick="window.location.href='{{ url_for('chat_home') }}'">+ Open Chat</button>
+            
+            <nav class="page-list" id="pageList">
+                <div class="section-header">📄 Pages</div>
+                {% for page in pages %}
+                <a href="{{ url_for('view_page', page_id=page.id) }}" 
+                   class="page-item {% if page.id == current_page_id %}active{% endif %}"
+                   data-page-id="{{ page.id }}">
+                    <span class="page-icon">{{ page.icon or '📄' }}</span>
+                    <span class="page-title">{{ page.title }}</span>
+                </a>
+                {% endfor %}
+                
+                {% if databases %}
+                <div class="section-header">📊 Databases</div>
+                {% for db in databases %}
+                <a href="{{ url_for('view_database', database_id=db.id) }}" 
+                   class="page-item database-item"
+                   data-database-id="{{ db.id }}">
+                    <span class="page-icon">{{ db.icon or '📊' }}</span>
+                    <span class="page-title">{{ db.title }}</span>
+                </a>
+                {% endfor %}
+                {% endif %}
+
+                {% if chats %}
+                <div class="section-header">Chats</div>
+                {% for chat in chats %}
+                <a href="{{ url_for('view_chat', chat_id=chat.id) }}" 
+                   class="page-item {% if chat.id == current_chat_id %}active{% endif %}"
+                   data-chat-id="{{ chat.id }}">
+                    <span class="page-icon">Chat</span>
+                    <span class="page-title">{{ chat.title }}</span>
+                </a>
+                {% endfor %}
+                {% endif %}
+            </nav>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

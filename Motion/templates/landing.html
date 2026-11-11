@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Motion - Your Thoughts, Organized</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <span class="logo-icon">📝</span>
+                <span class="logo-text">Motion</span>
+            </div>
+            <div class="nav-links">
+                <a href="#features" class="nav-link">Features</a>
+                <a href="#about" class="nav-link">About</a>
+                <a href="#pricing" class="nav-link">Pricing</a>
+                <a href="{{ url_for('login') }}" class="nav-link-btn login-btn">Login</a>
+                <a href="{{ url_for('register') }}" class="nav-link-btn signup-btn">Sign Up</a>
+            </div>
+            <button class="mobile-menu-btn" id="mobileMenuBtn">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-background">
+            <div class="gradient-orb orb-1"></div>
+            <div class="gradient-orb orb-2"></div>
+            <div class="gradient-orb orb-3"></div>
+        </div>
+        
+        <div class="hero-content">
+            <h1 class="hero-title">
+                Your <span class="gradient-text">thoughts</span>, beautifully organized
+            </h1>
+            <p class="hero-subtitle">
+                Write, plan, and get organized. Motion is the connected workspace where better, faster work happens.
+            </p>
+            <div class="hero-buttons">
+                <a href="{{ url_for('register') }}" class="btn btn-primary">
+                    Get Started Free
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </a>
+                <a href="#features" class="btn btn-secondary">
+                    Learn More
+                </a>
+            </div>
+            <p class="hero-note">✨ No credit card required • Free forever</p>
+        </div>
+        
+        <div class="hero-image">
+            <div class="app-preview">
+                <div class="preview-header">
+                    <div class="preview-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+                <div class="preview-content">
+                    <div class="preview-sidebar">
+                        <div class="preview-item"></div>
+                        <div class="preview-item"></div>
+                        <div class="preview-item active"></div>
+                        <div class="preview-item"></div>
+                    </div>
+                    <div class="preview-main">
+                        <div class="preview-line long"></div>
+                        <div class="preview-line medium"></div>
+                        <div class="preview-line short"></div>
+                        <div class="preview-line long"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="section-container">
+            <div class="section-header">
+                <h2 class="section-title">Everything you need to stay organized</h2>
+                <p class="section-subtitle">Powerful features to help you work smarter, not harder</p>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">✍️</div>
+                    <h3>Rich Text Editor</h3>
+                    <p>Write with Markdown support, code blocks, tables, and more. Your words, your way.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">💾</div>
+                    <h3>Auto-Save</h3>
+                    <p>Never lose your work. Everything saves automatically as you type.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🔍</div>
+                    <h3>Instant Search</h3>
+                    <p>Find anything in seconds with powerful search across all your pages.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🏷️</div>
+                    <h3>Smart Tags</h3>
+                    <p>Organize pages with tags. Keep everything sorted and easy to find.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🌓</div>
+                    <h3>Dark Mode</h3>
+                    <p>Easy on the eyes, day or night. Switch themes with one click.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <h3>Responsive</h3>
+                    <p>Works perfectly on desktop, tablet, and mobile. Access anywhere.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="about" id="about">
+        <div class="section-container">
+            <div class="about-content">
+                <div class="about-text">
+                    <h2 class="section-title">Built for modern productivity</h2>
+                    <p>Motion combines the simplicity of note-taking with powerful organization tools. Whether you're managing projects, writing articles, or organizing your life, we've got you covered.</p>
+                    <ul class="about-list">
+                        <li>🚀 Lightning fast performance</li>
+                        <li>🔒 Secure and private</li>
+                        <li>💡 Intuitive interface</li>
+                        <li>📊 Export your data anytime</li>
+                    </ul>
+                </div>
+                <div class="about-image">
+                    <div class="stats-card">
+                        <div class="stat">
+                            <h3>10K+</h3>
+                            <p>Active Users</p>
+                        </div>
+                        <div class="stat">
+                            <h3>99.9%</h3>
+                            <p>Uptime</p>
+                        </div>
+                        <div class="stat">
+                            <h3>500K+</h3>
+                            <p>Pages Created</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing" id="pricing">
+        <div class="section-container">
+            <div class="section-header">
+                <h2 class="section-title">Simple, transparent pricing</h2>
+                <p class="section-subtitle">Start for free, upgrade when you're ready</p>
+            </div>
+            
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <h3>Free</h3>
+                    <div class="price">
+                        <span class="amount">$0</span>
+                        <span class="period">/month</span>
+                    </div>
+                    <ul class="pricing-features">
+                        <li>✅ Unlimited pages</li>
+                        <li>✅ Markdown support</li>
+                        <li>✅ Auto-save</li>
+                        <li>✅ Basic search</li>
+                        <li>✅ Export to MD</li>
+                    </ul>
+                    <a href="{{ url_for('register') }}" class="pricing-btn">Get Started</a>
+                </div>
+                
+                <div class="pricing-card featured">
+                    <div class="popular-badge">Most Popular</div>
+                    <h3>Pro</h3>
+                    <div class="price">
+                        <span class="amount">$8</span>
+                        <span class="period">/month</span>
+                    </div>
+                    <ul class="pricing-features">
+                        <li>✅ Everything in Free</li>
+                        <li>✅ Advanced search</li>
+                        <li>✅ Nested pages</li>
+                        <li>✅ Collaboration</li>
+                        <li>✅ Priority support</li>
+                    </ul>
+                    <a href="{{ url_for('register') }}" class="pricing-btn primary">Upgrade to Pro</a>
+                </div>
+                
+                <div class="pricing-card">
+                    <h3>Team</h3>
+                    <div class="price">
+                        <span class="amount">$15</span>
+                        <span class="period">/user/month</span>
+                    </div>
+                    <ul class="pricing-features">
+                        <li>✅ Everything in Pro</li>
+                        <li>✅ Team workspaces</li>
+                        <li>✅ Admin controls</li>
+                        <li>✅ SSO integration</li>
+                        <li>✅ 24/7 support</li>
+                    </ul>
+                    <a href="{{ url_for('register') }}" class="pricing-btn">Contact Sales</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="cta-content">
+            <h2>Ready to get organized?</h2>
+            <p>Join thousands of users who trust Motion for their productivity needs.</p>
+            <a href="{{ url_for('register') }}" class="btn btn-primary large">
+                Start Writing Now
+                <svg width="24" height="24" viewBox="0 0 20 20" fill="none">
+                    <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <span class="logo-icon">📝</span>
+                <span class="logo-text">Motion</span>
+            </div>
+            <p>&copy; 2025 Motion. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/landing.js') }}"></script>
+</body>
+</html>
