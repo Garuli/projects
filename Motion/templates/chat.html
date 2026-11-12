@@ -23,9 +23,7 @@
     </form>
 </div>
 
-<script>
-    const chatId = {{ chat.id }};
-</script>
+<script type="application/json" id="motion-data">{{ {'chatId': chat.id}|tojson }}</script>
 {% endblock %}
 
 {% block scripts %}

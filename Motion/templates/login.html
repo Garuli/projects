@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Login - Motion</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
 </head>
@@ -23,6 +24,12 @@
                 <h1>Welcome back</h1>
                 <p>Enter your credentials to continue</p>
             </div>
+            
+            {% with messages = get_flashed_messages() %}
+            {% for message in messages %}
+            <div class="success-message show">{{ message }}</div>
+            {% endfor %}
+            {% endwith %}
             
             <form class="auth-form" id="loginForm">
                 <div class="form-group">
@@ -45,6 +52,7 @@
                         required 
                         placeholder="Enter your password"
                         autocomplete="current-password">
+                    <a href="{{ url_for('forgot_password') }}" class="forgot-link">Forgot password?</a>
                 </div>
                 
                 <div id="errorMessage" class="error-message"></div>
@@ -61,6 +69,7 @@
         </div>
     </div>
     
+    <script src="{{ url_for('static', filename='js/csrf.js') }}"></script>
     <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
 </body>
 </html>

@@ -1,6 +1,45 @@
+// Server-rendered page data. It lives in a <script type="application/json">
+// block because the Content-Security-Policy blocks inline scripts.
+const motionData = (() => {
+    const el = document.getElementById('motion-data');
+    try {
+        return el ? JSON.parse(el.textContent) : {};
+    } catch (e) {
+        return {};
+    }
+})();
+const pageId = motionData.pageId; // undefined outside the page editor
+
 // Global variables
 let autoSaveTimeout = null;
 let currentPageId = null;
+
+// Click actions. The CSP blocks inline onclick="" handlers, so buttons carry
+// data-action="name" and are dispatched here. Other scripts add their own.
+const actionHandlers = {
+    'new-page': () => createNewPage(),
+    'new-database': () => createNewDatabase(),
+    'open-chat': (el) => { window.location.href = el.dataset.href; },
+    'toggle-preview': () => togglePreview(),
+    'ai-improve': () => aiImprove()
+};
+
+document.addEventListener('click', (e) => {
+    const el = e.target.closest('[data-action]');
+    if (el && actionHandlers[el.dataset.action]) {
+        actionHandlers[el.dataset.action](el, e);
+    }
+});
+
+// Escape text for safe insertion into HTML (element content or quoted attributes)
+function escapeHtml(text) {
+    return String(text ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
@@ -8,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeEventListeners();
     
     // Check if we're on a page view
-    if (typeof pageId !== 'undefined') {
+    if (pageId !== undefined) {
         currentPageId = pageId;
         initializeEditor();
     }
@@ -129,7 +168,10 @@ function autoSave(field, value) {
             },
             body: JSON.stringify(data)
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.json();
+        })
         .then(() => {
             if (indicator) {
                 indicator.textContent = 'Saved';
@@ -177,9 +219,12 @@ function saveTags() {
     .then(response => response.json())
     .then(() => {
         // Update display
-        tagsDisplay.innerHTML = tags.map(tag => 
-            `<span class="tag">${tag}</span>`
-        ).join('');
+        tagsDisplay.replaceChildren(...tags.map(tag => {
+            const span = document.createElement('span');
+            span.className = 'tag';
+            span.textContent = tag;
+            return span;
+        }));
         
         tagsInput.value = '';
     })
@@ -195,6 +240,7 @@ function togglePreview() {
         // Show preview
         preview.classList.remove('hidden');
         editor.style.display = 'none';
+        // parseMarkdown escapes all HTML first, so this is safe
         preview.innerHTML = parseMarkdown(editor.value);
     } else {
         // Show editor
@@ -204,8 +250,10 @@ function togglePreview() {
 }
 
 // Simple Markdown Parser
+// Escapes the input first, so the only HTML in the output is what these rules
+// generate. Links are limited to http, https and mailto.
 function parseMarkdown(text) {
-    let html = text;
+    let html = escapeHtml(text);
     
     // Code blocks (multiline)
     html = html.replace(/```(\w+)?\r?\n([\s\S]*?)\r?\n```/g, '<pre><code>$2</code></pre>');
@@ -257,7 +305,15 @@ function parseMarkdown(text) {
     });
     
     // Links
-    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, label, url) => {
+        url = url.trim();
+        // Escaped text can't contain < > or ", so if any are present the URL
+        // picked up markup from an earlier rule. Leave it as plain text.
+        if (!/^(https?:|mailto:)/i.test(url) || /[<>"]/.test(url)) {
+            return match;
+        }
+        return `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+    });
     
     // Line breaks
     html = html.replace(/\n/g, '<br>');
@@ -278,14 +334,22 @@ function handleSearch(e) {
     fetch(`/api/search?q=${encodeURIComponent(query)}`)
         .then(response => response.json())
         .then(results => {
+            resultsDiv.replaceChildren();
             if (results.length === 0) {
-                resultsDiv.innerHTML = '<div class="search-result-item">No results found</div>';
+                const empty = document.createElement('div');
+                empty.className = 'search-result-item';
+                empty.textContent = 'No results found';
+                resultsDiv.appendChild(empty);
             } else {
-                resultsDiv.innerHTML = results.map(page => 
-                    `<div class="search-result-item" onclick="window.location.href='/page/${page.id}'">
-                        📄 ${page.title}
-                    </div>`
-                ).join('');
+                results.forEach(page => {
+                    const row = document.createElement('div');
+                    row.className = 'search-result-item';
+                    row.textContent = `📄 ${page.title}`;
+                    row.addEventListener('click', () => {
+                        window.location.href = `/page/${Number(page.id)}`;
+                    });
+                    resultsDiv.appendChild(row);
+                });
             }
             resultsDiv.classList.add('active');
         })
@@ -389,7 +453,7 @@ async function aiImprove() {
 }
 
 // Initialize AI features if on page edit view
-if (typeof pageId !== 'undefined') {
+if (pageId !== undefined) {
     initializeAIFeatures();
 }
 

@@ -14,6 +14,6 @@ static/
 | Folder | Contents | Details |
 |---|---|---|
 | `css/` | 4 stylesheets | [css/README.md](css/README.md) |
-| `js/` | 5 scripts | [js/README.md](js/README.md) |
+| `js/` | 6 scripts | [js/README.md](js/README.md) |
 
 There are no frameworks or build steps. The CSS and JavaScript are plain files, so editing one and refreshing the browser is enough to see the change.

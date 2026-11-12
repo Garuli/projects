@@ -24,7 +24,7 @@
 
             <!-- AI Features Menu -->
             <div class="ai-menu" id="aiMenu">
-                <button class="ai-menu-item" onclick="aiImprove()">
+                <button class="ai-menu-item" data-action="ai-improve">
                     Enhance Writing
                 </button>
             </div>
@@ -45,7 +45,7 @@
 
 <div class="editor-container">
         <div class="editor-toolbar">
-            <button class="toolbar-btn" onclick="togglePreview()" title="Toggle preview (Ctrl+P)">
+            <button class="toolbar-btn" data-action="toggle-preview" title="Toggle preview (Ctrl+P)">
                 👁️ Preview
             </button>
             <span class="save-indicator" id="saveIndicator">Saved</span>
@@ -76,7 +76,5 @@
     </div>
 </div>
 
-<script>
-    const pageId = {{ page.id }};
-</script>
+<script type="application/json" id="motion-data">{{ {'pageId': page.id}|tojson }}</script>
 {% endblock %}

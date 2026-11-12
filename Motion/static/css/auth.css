@@ -242,6 +242,39 @@ body {
     display: block;
 }
 
+/* Success Message (flash after a password reset, forgot-password confirmation) */
+.success-message {
+    display: none;
+    padding: 12px 16px;
+    background-color: #d1fae5;
+    border: 1px solid #a7f3d0;
+    border-radius: 8px;
+    color: #047857;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+.auth-form .success-message {
+    margin-bottom: 0;
+}
+
+.success-message.show {
+    display: block;
+}
+
+/* "Forgot password?" under the login password field */
+.forgot-link {
+    align-self: flex-end;
+    color: var(--primary);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.forgot-link:hover {
+    text-decoration: underline;
+}
+
 /* Submit Button */
 .submit-btn {
     padding: 14px;
@@ -284,6 +317,13 @@ body {
 
 .submit-btn.loading .btn-loader {
     display: inline-block;
+}
+
+/* A link styled as the submit button ("Request a new link") */
+.submit-link {
+    display: block;
+    text-align: center;
+    text-decoration: none;
 }
 
 @keyframes spin {

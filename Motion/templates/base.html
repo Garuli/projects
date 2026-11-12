@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}Motion{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/database.css') }}">
@@ -17,9 +18,13 @@
                     <button class="theme-toggle" id="themeToggle" title="Toggle dark mode (Ctrl+D)">
                         🌙
                     </button>
-                    <a href="{{ url_for('logout') }}" class="logout-btn" title="Logout">
-                        🚪
-                    </a>
+                    <a href="{{ url_for('change_password') }}" class="logout-btn" title="Change password">🔑</a>
+                    <form method="post" action="{{ url_for('logout') }}" class="logout-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="logout-btn" title="Logout">
+                            🚪
+                        </button>
+                    </form>
                 </div>
             </div>
             
@@ -30,7 +35,7 @@
             
             <button class="new-page-btn" id="newPageBtn">+ New Page</button>
             <button class="new-page-btn database-btn" id="newDatabaseBtn">+ New Database</button>
-            <button class="new-page-btn chat-btn" onclick="window.location.href='{{ url_for('chat_home') }}'">+ Open Chat</button>
+            <button class="new-page-btn chat-btn" data-action="open-chat" data-href="{{ url_for('chat_home') }}">+ Open Chat</button>
             
             <nav class="page-list" id="pageList">
                 <div class="section-header">📄 Pages</div>
@@ -75,6 +80,7 @@
         </main>
     </div>
     
+    <script src="{{ url_for('static', filename='js/csrf.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>

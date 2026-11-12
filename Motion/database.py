@@ -1,29 +1,52 @@
 import sqlite3
 from datetime import datetime
 import hashlib
+import hmac
 import os
 import json
+import secrets
+import time
+from werkzeug.security import generate_password_hash, check_password_hash
+
+# Checked when an email doesn't exist, so a failed login takes about the same
+# time whether or not the account exists.
+_DUMMY_PASSWORD_HASH = generate_password_hash(secrets.token_hex(16))
+
+# Per-email lockout: this many failed logins inside the window locks the email.
+LOGIN_LOCK_MAX_FAILURES = 5
+LOGIN_LOCK_WINDOW_SECONDS = 15 * 60
 
 class Database:
-    def __init__(self, db_name='motion.db'):
+    def __init__(self, db_name=None):
+        # MOTION_DB lets tests (or deployments) point at a different SQLite file
+        db_name = db_name or os.environ.get('MOTION_DB', 'motion.db')
         self.db_name = db_name
         self.init_db()
     
     def get_connection(self):
         conn = sqlite3.connect(self.db_name)
         conn.row_factory = sqlite3.Row
+        # SQLite ignores FOREIGN KEY / ON DELETE CASCADE unless this is set per connection
+        conn.execute('PRAGMA foreign_keys = ON')
         return conn
     
     def hash_password(self, password):
-        salt = os.urandom(32)
-        pwdhash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000)
-        return salt + pwdhash
+        # Werkzeug format string, e.g. "scrypt:32768:8:1$salt$hash"
+        return generate_password_hash(password)
+    
+    def is_legacy_hash(self, stored_password):
+        # Old format: raw bytes = 32-byte salt + PBKDF2-SHA256 (100k iterations)
+        return isinstance(stored_password, (bytes, bytearray, memoryview))
     
     def verify_password(self, stored_password, provided_password):
-        salt = stored_password[:32]
-        stored_hash = stored_password[32:]
-        pwdhash = hashlib.pbkdf2_hmac('sha256', provided_password.encode('utf-8'), salt, 100000)
-        return pwdhash == stored_hash
+        if self.is_legacy_hash(stored_password):
+            stored_password = bytes(stored_password)
+            salt = stored_password[:32]
+            stored_hash = stored_password[32:]
+            pwdhash = hashlib.pbkdf2_hmac('sha256', provided_password.encode('utf-8'), salt, 100000)
+            return hmac.compare_digest(pwdhash, stored_hash)
+        # check_password_hash compares with hmac.compare_digest internally
+        return check_password_hash(stored_password, provided_password)
     
     def init_db(self):
         conn = self.get_connection()
@@ -36,9 +59,45 @@ class Database:
                 email TEXT UNIQUE NOT NULL,
                 password BLOB NOT NULL,
                 name TEXT NOT NULL,
+                session_version INTEGER NOT NULL DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        
+        # Migrate databases created before session_version existed
+        cursor.execute('PRAGMA table_info(users)')
+        user_columns = [row[1] for row in cursor.fetchall()]
+        if 'session_version' not in user_columns:
+            cursor.execute('ALTER TABLE users ADD COLUMN session_version INTEGER NOT NULL DEFAULT 0')
+        
+        # Failed login attempts (per-email lockout)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS login_attempts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT NOT NULL,
+                attempted_at REAL NOT NULL
+            )
+        ''')
+        cursor.execute(
+            'CREATE INDEX IF NOT EXISTS idx_login_attempts_email ON login_attempts (email, attempted_at)'
+        )
+        
+        # Password reset tokens: only the SHA-256 of each token is stored.
+        # Times are Unix timestamps (like login_attempts).
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS password_resets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                token_hash TEXT UNIQUE NOT NULL,
+                created_at REAL NOT NULL,
+                expires_at REAL NOT NULL,
+                used_at REAL,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        ''')
+        cursor.execute(
+            'CREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets (user_id)'
+        )
         
         # Pages table
         cursor.execute('''
@@ -171,9 +230,146 @@ class Database:
     
     def verify_user(self, email, password):
         user = self.get_user_by_email(email)
-        if user and self.verify_password(user['password'], password):
-            return user
-        return None
+        if not user:
+            # Same work as a real check so timing doesn't reveal which emails exist
+            check_password_hash(_DUMMY_PASSWORD_HASH, password)
+            return None
+        if not self.verify_password(user['password'], password):
+            return None
+        if self.is_legacy_hash(user['password']):
+            # Silently upgrade old-format hashes on successful login
+            self.update_password_hash(user['id'], self.hash_password(password))
+        return user
+    
+    def update_password_hash(self, user_id, password_hash):
+        conn = self.get_connection()
+        conn.execute('UPDATE users SET password = ? WHERE id = ?', (password_hash, user_id))
+        conn.commit()
+        conn.close()
+    
+    def get_session_version(self, user_id):
+        """Current session_version for a user, or None if the user no longer exists"""
+        conn = self.get_connection()
+        row = conn.execute('SELECT session_version FROM users WHERE id = ?', (user_id,)).fetchone()
+        conn.close()
+        return row[0] if row else None
+    
+    def bump_session_version(self, user_id):
+        """Invalidate every existing session cookie for this user"""
+        conn = self.get_connection()
+        conn.execute(
+            'UPDATE users SET session_version = session_version + 1 WHERE id = ?', (user_id,)
+        )
+        conn.commit()
+        conn.close()
+    
+    def get_user_by_id(self, user_id):
+        conn = self.get_connection()
+        row = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+        conn.close()
+        return dict(row) if row else None
+    
+    def change_password(self, user_id, password_hash):
+        """Set a new password, revoke all sessions and reset tokens. Returns the new session_version."""
+        conn = self.get_connection()
+        try:
+            conn.execute(
+                'UPDATE users SET password = ?, session_version = session_version + 1 WHERE id = ?',
+                (password_hash, user_id)
+            )
+            conn.execute('DELETE FROM password_resets WHERE user_id = ?', (user_id,))
+            row = conn.execute('SELECT session_version FROM users WHERE id = ?', (user_id,)).fetchone()
+            conn.commit()
+            return row[0] if row else None
+        finally:
+            conn.close()
+    
+    # Password reset methods
+    def delete_stale_password_resets(self):
+        """Remove expired and used reset tokens (for every user)"""
+        conn = self.get_connection()
+        conn.execute('DELETE FROM password_resets WHERE expires_at <= ? OR used_at IS NOT NULL',
+                     (time.time(),))
+        conn.commit()
+        conn.close()
+    
+    def create_password_reset(self, user_id, token_hash, ttl_seconds):
+        """Store a new token hash for user_id and drop that user's older tokens"""
+        now = time.time()
+        conn = self.get_connection()
+        try:
+            conn.execute('DELETE FROM password_resets WHERE user_id = ?', (user_id,))
+            conn.execute(
+                'INSERT INTO password_resets (user_id, token_hash, created_at, expires_at) '
+                'VALUES (?, ?, ?, ?)',
+                (user_id, token_hash, now, now + ttl_seconds)
+            )
+            conn.commit()
+        finally:
+            conn.close()
+    
+    def get_valid_password_reset(self, token_hash):
+        """The unused, unexpired reset row for this hash, or None"""
+        conn = self.get_connection()
+        row = conn.execute(
+            'SELECT * FROM password_resets '
+            'WHERE token_hash = ? AND used_at IS NULL AND expires_at > ?',
+            (token_hash, time.time())
+        ).fetchone()
+        conn.close()
+        return dict(row) if row else None
+    
+    def use_password_reset(self, reset_id, user_id, password_hash):
+        """Atomically: mark the token used (only if still valid), set the password,
+        revoke all sessions and delete the user's other tokens. False if the token
+        was already used or expired (e.g. a concurrent request won)."""
+        now = time.time()
+        conn = self.get_connection()
+        try:
+            cursor = conn.execute(
+                'UPDATE password_resets SET used_at = ? '
+                'WHERE id = ? AND user_id = ? AND used_at IS NULL AND expires_at > ?',
+                (now, reset_id, user_id, now)
+            )
+            if cursor.rowcount != 1:
+                conn.rollback()
+                return False
+            conn.execute(
+                'UPDATE users SET password = ?, session_version = session_version + 1 WHERE id = ?',
+                (password_hash, user_id)
+            )
+            conn.execute('DELETE FROM password_resets WHERE user_id = ? AND id != ?',
+                         (user_id, reset_id))
+            conn.commit()
+            return True
+        finally:
+            conn.close()
+    
+    # Login attempt methods (per-email lockout)
+    def is_login_locked(self, email):
+        cutoff = time.time() - LOGIN_LOCK_WINDOW_SECONDS
+        conn = self.get_connection()
+        row = conn.execute(
+            'SELECT COUNT(*) FROM login_attempts WHERE email = ? AND attempted_at > ?',
+            (email, cutoff)
+        ).fetchone()
+        conn.close()
+        return row[0] >= LOGIN_LOCK_MAX_FAILURES
+    
+    def record_failed_login(self, email):
+        now = time.time()
+        conn = self.get_connection()
+        conn.execute('DELETE FROM login_attempts WHERE attempted_at <= ?',
+                     (now - LOGIN_LOCK_WINDOW_SECONDS,))
+        conn.execute('INSERT INTO login_attempts (email, attempted_at) VALUES (?, ?)', (email, now))
+        conn.commit()
+        conn.close()
+    
+    def clear_failed_logins(self, email):
+        conn = self.get_connection()
+        conn.execute('DELETE FROM login_attempts WHERE email = ?', (email,))
+        conn.commit()
+        conn.close()
     
     # Page methods
     def create_page(self, title, content='', user_id=None, parent_id=None):
@@ -331,15 +527,17 @@ class Database:
         return prop_id
     
     def delete_property(self, property_id, user_id):
-        """Delete a property, only if its database belongs to user_id"""
+        """Delete a property, only if its database belongs to user_id. Returns True if deleted."""
         conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute(
             'DELETE FROM database_properties WHERE id = ? '
             'AND database_id IN (SELECT id FROM databases WHERE user_id = ?)',
             (property_id, user_id))
+        deleted = cursor.rowcount
         conn.commit()
         conn.close()
+        return deleted > 0
     
     def get_database_properties(self, database_id):
         conn = self.get_connection()

@@ -49,15 +49,15 @@
     <div class="filter-panel" id="filterPanel">
         <div class="filter-header">
             <h3>Filters</h3>
-            <button class="close-btn" onclick="closeFilterPanel()">✕</button>
+            <button class="close-btn" data-action="close-filter-panel">✕</button>
         </div>
         <div class="filter-rules" id="filterRules">
             <!-- Filter rules will be added here -->
         </div>
-        <button class="add-filter-btn" onclick="addFilterRule()">+ Add Filter</button>
+        <button class="add-filter-btn" data-action="add-filter-rule">+ Add Filter</button>
         <div class="filter-actions">
-            <button class="btn-apply" onclick="applyFilters()">Apply</button>
-            <button class="btn-clear" onclick="clearFilters()">Clear All</button>
+            <button class="btn-apply" data-action="apply-filters">Apply</button>
+            <button class="btn-clear" data-action="clear-filters">Clear All</button>
         </div>
     </div>
     
@@ -65,7 +65,7 @@
     <div class="sort-panel" id="sortPanel">
         <div class="sort-header">
             <h3>Sort</h3>
-            <button class="close-btn" onclick="closeSortPanel()">✕</button>
+            <button class="close-btn" data-action="close-sort-panel">✕</button>
         </div>
         <div class="sort-options">
             <label>Sort by:</label>
@@ -81,7 +81,7 @@
                 <option value="desc">Descending</option>
             </select>
         </div>
-        <button class="btn-apply" onclick="applySort()">Apply Sort</button>
+        <button class="btn-apply" data-action="apply-sort">Apply Sort</button>
     </div>
     
     <!-- Add Property Modal -->
@@ -89,7 +89,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Add Property</h2>
-                <button class="modal-close" onclick="closeAddPropertyModal()">✕</button>
+                <button class="modal-close" data-action="close-property-modal">✕</button>
             </div>
             <form id="addPropertyForm">
                 <div class="form-group">
@@ -111,7 +111,7 @@
                         <option value="rating">Rating (1-5 stars)</option>
                     </select>
                 </div>
-                <div class="form-group" id="optionsGroup" style="display: none;">
+                <div class="form-group" id="optionsGroup">
                     <label>Options (comma-separated)</label>
                     <input type="text" id="propertyOptions" class="form-input" placeholder="e.g., Option1, Option2, Option3">
                     <small>For Select and Multi-Select types</small>
@@ -223,7 +223,7 @@
     <div class="modal-content">
         <div class="modal-header">
             <h2>New Item</h2>
-            <button class="modal-close" onclick="closeAddItemModal()">✕</button>
+            <button class="modal-close" data-action="close-item-modal">✕</button>
         </div>
         <form id="addItemForm">
             {% for prop in properties %}
@@ -250,10 +250,9 @@
     </div>
 </div>
 
-<script>
-    const databaseId = {{ database.id }};
-    const properties = {{ properties|tojson }};
-    const items = {{ items|tojson }};
-</script>
+<script type="application/json" id="motion-data">{{ {'databaseId': database.id, 'properties': properties, 'items': items}|tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
 <script src="{{ url_for('static', filename='js/database.js') }}"></script>
 {% endblock %}

@@ -1,4 +1,9 @@
 // Database view management
+// Data comes from the JSON block read in main.js (motionData); the CSP blocks inline scripts.
+const databaseId = motionData.databaseId;
+const properties = motionData.properties || [];
+const items = motionData.items || [];
+
 let currentView = 'table';
 let currentItems = items || [];
 let currentMonth = new Date();
@@ -166,13 +171,13 @@ function renderBoardView() {
     
     // Clear columns
     document.querySelectorAll('.column-items').forEach(col => {
-        col.innerHTML = '';
+        col.replaceChildren();
     });
     
     // Add cards to columns
     currentItems.forEach(item => {
         const status = item.properties['Status'] || statusProp.options[0];
-        const column = document.querySelector(`.column-items[data-status="${status}"]`);
+        const column = document.querySelector(`.column-items[data-status="${CSS.escape(String(status))}"]`);
         
         if (column) {
             const card = createKanbanCard(item);
@@ -201,11 +206,11 @@ function createKanbanCard(item) {
     card.innerHTML = `
         <div class="card-header">
             <h4>${escapeHtml(title)}</h4>
-            ${priority ? `<span class="priority-badge ${priority.toLowerCase()}">${escapeHtml(priority)}</span>` : ''}
+            ${priority ? `<span class="priority-badge ${cssClass(priority)}">${escapeHtml(priority)}</span>` : ''}
         </div>
-        ${dueDate ? `<div class="card-date">📅 ${formatDate(dueDate)}</div>` : ''}
+        ${dueDate ? `<div class="card-date">📅 ${escapeHtml(formatDate(dueDate))}</div>` : ''}
         <div class="card-actions">
-            <button class="card-action-btn delete-card" onclick="deleteCardHandler(${item.id}, event)">🗑️</button>
+            <button class="card-action-btn delete-card" data-action="delete-card" data-item-id="${Number(item.id)}">🗑️</button>
         </div>
     `;
     
@@ -344,15 +349,15 @@ function renderListView() {
         const dueDate = item.properties['Due Date'] || '';
         
         return `
-            <div class="list-item" data-item-id="${item.id}">
+            <div class="list-item" data-item-id="${Number(item.id)}">
                 <div class="list-item-main">
                     <input type="checkbox" class="list-checkbox" ${status === 'Done' ? 'checked' : ''}>
                     <span class="list-title">${escapeHtml(title)}</span>
                 </div>
                 <div class="list-item-meta">
-                    ${status ? `<span class="status-badge ${status.toLowerCase().replace(' ', '-')}">${escapeHtml(status)}</span>` : ''}
-                    ${priority ? `<span class="priority-badge ${priority.toLowerCase()}">${escapeHtml(priority)}</span>` : ''}
-                    ${dueDate ? `<span class="date-badge">📅 ${formatDate(dueDate)}</span>` : ''}
+                    ${status ? `<span class="status-badge ${cssClass(status)}">${escapeHtml(status)}</span>` : ''}
+                    ${priority ? `<span class="priority-badge ${cssClass(priority)}">${escapeHtml(priority)}</span>` : ''}
+                    ${dueDate ? `<span class="date-badge">📅 ${escapeHtml(formatDate(dueDate))}</span>` : ''}
                 </div>
             </div>
         `;
@@ -460,7 +465,7 @@ async function deleteItem(itemId) {
 }
 
 function deleteCardHandler(itemId, event) {
-    event.stopPropagation();
+    if (event) event.stopPropagation();
     if (confirm('Delete this card?')) {
         deleteItem(itemId).then(() => {
             location.reload();
@@ -481,15 +486,11 @@ function formatDate(dateStr) {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+// User text -> safe CSS class token (e.g. "In Progress" -> "in-progress").
+// escapeHtml() is defined in main.js.
+function cssClass(text) {
+    return String(text).toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
 }
-
-// Make functions global for onclick handlers
-window.closeAddItemModal = closeAddItemModal;
-window.deleteCardHandler = deleteCardHandler;
 
 // Filter & Sort Functions
 let currentFilters = [];
@@ -538,7 +539,7 @@ function addFilterRule() {
         <div class="filter-rule-row">
             <select class="filter-property">
                 <option value="">Select property...</option>
-                ${properties.map(p => `<option value="${p.name}">${p.name}</option>`).join('')}
+                ${properties.map(p => `<option value="${escapeHtml(p.name)}">${escapeHtml(p.name)}</option>`).join('')}
             </select>
             <select class="filter-operator">
                 <option value="equals">Equals</option>
@@ -549,7 +550,7 @@ function addFilterRule() {
         </div>
         <div class="filter-rule-row">
             <input type="text" class="filter-value" placeholder="Value...">
-            <button onclick="removeFilterRule(${ruleId})">Remove</button>
+            <button type="button" data-action="remove-filter-rule" data-rule-id="${ruleId}">Remove</button>
         </div>
     `;
     
@@ -557,7 +558,7 @@ function addFilterRule() {
 }
 
 function removeFilterRule(ruleId) {
-    const rule = document.querySelector(`[data-rule-id="${ruleId}"]`);
+    const rule = document.querySelector(`.filter-rule[data-rule-id="${Number(ruleId)}"]`);
     if (rule) rule.remove();
 }
 
@@ -598,7 +599,7 @@ async function applyFilters() {
 
 function clearFilters() {
     currentFilters = [];
-    document.getElementById('filterRules').innerHTML = '';
+    document.getElementById('filterRules').replaceChildren();
     location.reload();
 }
 
@@ -701,11 +702,16 @@ function closeAddPropertyModal() {
     }
 }
 
-window.closeFilterPanel = closeFilterPanel;
-window.closeSortPanel = closeSortPanel;
-window.addFilterRule = addFilterRule;
-window.removeFilterRule = removeFilterRule;
-window.applyFilters = applyFilters;
-window.clearFilters = clearFilters;
-window.applySort = applySort;
-window.closeAddPropertyModal = closeAddPropertyModal;
+// data-action buttons (dispatched by main.js; the CSP blocks inline onclick)
+Object.assign(actionHandlers, {
+    'close-item-modal': () => closeAddItemModal(),
+    'delete-card': (el, e) => deleteCardHandler(Number(el.dataset.itemId), e),
+    'close-filter-panel': () => closeFilterPanel(),
+    'close-sort-panel': () => closeSortPanel(),
+    'add-filter-rule': () => addFilterRule(),
+    'remove-filter-rule': (el) => removeFilterRule(el.dataset.ruleId),
+    'apply-filters': () => applyFilters(),
+    'clear-filters': () => clearFilters(),
+    'apply-sort': () => applySort(),
+    'close-property-modal': () => closeAddPropertyModal()
+});

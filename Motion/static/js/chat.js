@@ -1,3 +1,5 @@
+// chatId comes from the JSON data block read in main.js (the CSP blocks inline scripts)
+const chatId = motionData.chatId;
 const chatMessages = document.getElementById('chatMessages');
 const chatForm = document.getElementById('chatForm');
 const chatInput = document.getElementById('chatInput');

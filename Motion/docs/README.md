@@ -4,10 +4,10 @@ The documentation for Motion. Start with [SETUP.md](SETUP.md) if you want to run
 
 | Document | What you will find |
 |---|---|
-| [SETUP.md](SETUP.md) | Step-by-step install for macOS, Windows and Linux, environment variables, Ollama, troubleshooting |
+| [SETUP.md](SETUP.md) | Step-by-step install for macOS, Windows and Linux, environment variables, email for password reset, Ollama, troubleshooting |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | The parts of the app, how a request travels through them, design choices and security |
 | [API.md](API.md) | Every route with its method, purpose and example requests |
-| [DATABASE.md](DATABASE.md) | The 9 tables, their columns and how they relate |
+| [DATABASE.md](DATABASE.md) | The 11 tables, their columns and how they relate |
 | [screenshots/](screenshots/README.md) | A gallery of every screen |
 | [images/](images/README.md) | Logo and other images used by the README files |
 

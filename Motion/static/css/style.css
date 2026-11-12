@@ -152,6 +152,17 @@ body {
     background-color: var(--hover-bg);
 }
 
+/* Logout is a POST form (CSRF-protected), styled like the old link */
+.logout-form {
+    margin: 0;
+    display: flex;
+}
+
+.logout-btn {
+    font-family: inherit;
+    color: inherit;
+}
+
 /* Search */
 .sidebar-search {
     padding: 15px;

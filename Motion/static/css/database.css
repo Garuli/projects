@@ -931,3 +931,9 @@
     font-size: 13px;
     color: var(--text-secondary);
 }
+
+/* Select options field: hidden until a select type is chosen (JS toggles it).
+   Kept out of an inline style attribute so the CSP can block inline styles. */
+#optionsGroup {
+    display: none;
+}

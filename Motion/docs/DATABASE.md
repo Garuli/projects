@@ -1,6 +1,6 @@
 # Database reference
 
-Motion stores everything in one SQLite file, `motion.db`. The tables are created automatically by `database.py` the first time the app starts, so there is nothing to install or migrate.
+Motion stores everything in one SQLite file, `motion.db`. The tables are created automatically by `database.py` the first time the app starts, so there is nothing to install. Set `MOTION_DB` to use a different file. Small migrations run on start-up too: an older `motion.db` gets the new `session_version` column and the `login_attempts` and `password_resets` tables automatically.
 
 ## Relationships
 
@@ -9,6 +9,7 @@ erDiagram
     users ||--o{ pages : owns
     users ||--o{ databases : owns
     users ||--o{ chat_threads : owns
+    users ||--o{ password_resets : "can reset with"
     pages ||--o{ pages : "has sub-pages (parent_id)"
     pages ||--o{ page_tags : has
     tags ||--o{ page_tags : used_in
@@ -16,6 +17,8 @@ erDiagram
     databases ||--o{ database_items : "has rows"
     chat_threads ||--o{ chat_messages : contains
 ```
+
+`login_attempts` stands alone. It is keyed by email, not linked to `users`.
 
 ## Tables
 
@@ -25,9 +28,35 @@ erDiagram
 |---|---|---|
 | `id` | INTEGER | Primary key |
 | `email` | TEXT | Unique, required |
-| `password` | BLOB | The 32-byte salt followed by the PBKDF2-SHA256 hash. Never the plain password |
+| `password` | BLOB | A Werkzeug hash string such as `scrypt:32768:8:1$salt$hash`. Accounts from before the upgrade may still hold the old format (raw bytes: a 32-byte salt followed by a PBKDF2-SHA256 hash). Those are re-hashed on the next successful login. Never the plain password |
 | `name` | TEXT | Required |
+| `session_version` | INTEGER | Defaults to `0`. Copied into the session at login and checked on every request. Increasing it (logout does this) revokes all of the user's existing session cookies. Added with `ALTER TABLE` to older databases |
 | `created_at` | TIMESTAMP | Defaults to now (UTC) |
+
+### `login_attempts`
+
+Failed logins, used to lock an email after 5 failures in 15 minutes.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | INTEGER | Primary key |
+| `email` | TEXT | The email that was tried (also for emails with no account, so the lock does not reveal which accounts exist) |
+| `attempted_at` | REAL | Unix time of the attempt. Rows older than 15 minutes are deleted, and a successful login clears that email's rows |
+
+### `password_resets`
+
+Password reset tokens. Only the SHA-256 hash of each token is stored, so a copy of the database cannot be used to reset anyone's password.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | INTEGER | Primary key |
+| `user_id` | INTEGER | The account, `ON DELETE CASCADE` |
+| `token_hash` | TEXT | Unique. Hex SHA-256 of the token from `secrets.token_urlsafe(32)`. The raw token exists only in the emailed link |
+| `created_at` | REAL | Unix time the link was requested |
+| `expires_at` | REAL | `created_at` + 30 minutes |
+| `used_at` | REAL | Unix time the token was used, `NULL` while unused |
+
+A user has at most one row: a new request deletes the user's older rows first. Every request (for any email) deletes all expired and used rows. A successful reset marks its row used and deletes the user's other rows, and changing the password while logged in deletes them all. Marking a row used is a conditional `UPDATE ... WHERE used_at IS NULL AND expires_at > now`, so two requests with the same link cannot both succeed.
 
 ### `pages`
 
@@ -90,8 +119,8 @@ erDiagram
 ## Notes
 
 - **Item values are stored as JSON, keyed by column name.** This keeps the schema simple, but it means renaming a column does not rename the keys inside existing items.
-- **Cascading deletes are declared but not enforced.** The tables use `ON DELETE CASCADE`, but SQLite only enforces foreign keys when `PRAGMA foreign_keys = ON` is run on each connection, and the code does not do that yet. Deleting a parent row can leave child rows behind.
-- **Timestamps are UTC.** They use SQLite's `CURRENT_TIMESTAMP`.
+- **Foreign keys are enforced.** `get_connection()` runs `PRAGMA foreign_keys = ON` on every connection, so `ON DELETE CASCADE` works: deleting a page removes its tags links and sub-pages, deleting a database removes its columns and items, and deleting a chat removes its messages. Rows orphaned before this change are not cleaned up automatically. `PRAGMA foreign_key_check` lists them.
+- **Timestamps are UTC.** They use SQLite's `CURRENT_TIMESTAMP`, except `login_attempts` and `password_resets`, which store Unix time as `REAL`.
 - **Queries use `?` placeholders**, never string formatting, to prevent SQL injection.
 - **`motion.db` is not stored in git.** It holds user accounts, so it is listed in `.gitignore`. Delete the file to reset the app.
 
