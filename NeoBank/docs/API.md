@@ -25,19 +25,30 @@ All routes are under `/api`. Everything except `/api/auth/*` needs a header `Aut
 |---|---|---|
 | GET | `/api/users` | The logged-in user, as a list |
 | GET | `/api/users/{id}` | Your profile (`id` must be you) |
+| POST | `/api/users/me/password` | Body: `currentPassword`, `newPassword` (6+ characters). `400` if the current one is wrong or the new one is the same |
 | PATCH | `/api/users/{id}/profile-picture` | Body: `{"profilePicture": "..."}` |
 
 ## Accounts
 
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/api/accounts` | Open an account. Body: `userId` (must be you), `type`, `initialDeposit`, optional `creditLimit` |
-| GET | `/api/accounts` | All accounts, richest first (used by the transfer screen, see [known limits](ARCHITECTURE.md#known-limits)) |
+| POST | `/api/accounts` | Open an account. Body: `userId` (must be you), `type`. Savings, Current, Checking and Business take an optional `initialDeposit` (0 to 1,000,000), which becomes the opening balance and an "Opening deposit" transaction. Student and Premium need a `creditLimit` |
+| GET | `/api/accounts` | Your accounts only |
 | GET | `/api/accounts/user/{userId}` | Your accounts |
 | GET | `/api/accounts/{id}` | One of your accounts |
 | GET | `/api/accounts/{id}/balance` | Its balance |
+| POST | `/api/accounts/{id}/freeze` | Freeze it. A frozen account cannot send money but can still receive |
+| POST | `/api/accounts/{id}/unfreeze` | Undo that |
 | POST | `/api/accounts/{id}/deletion-request` | Ask to delete it (balance must be zero) |
 | GET | `/api/accounts/{id}/deletion-request` | Status of that request |
+
+## Contacts
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/contacts` | Your saved contacts |
+| POST | `/api/contacts` | Body: `name`, `accountNumber`. `201`. Refused if the account does not exist, is yours, or is already saved |
+| DELETE | `/api/contacts/{id}` | Remove one of yours (`403` for someone else's) |
 
 ## Transfers and transactions
 

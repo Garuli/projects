@@ -94,6 +94,14 @@ public class Account {
     private BigDecimal availableCredit;
 
     /** Supported account categories, each with distinct interest/overdraft rules (R9). */
+    /** True when the owner froze the account. Nullable so rows created before this column existed stay valid. */
+    @Column(name = "frozen")
+    private Boolean frozen;
+
+    public boolean isFrozen() {
+        return Boolean.TRUE.equals(frozen);
+    }
+
     public enum AccountType {
         SAVINGS, CURRENT, BUSINESS, STUDENT, CHECKING, PREMIUM
     }

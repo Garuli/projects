@@ -4,7 +4,7 @@ NeoBank is one Spring Boot application. The browser loads a single HTML page fro
 
 ```mermaid
 flowchart LR
-    B["Browser<br/>index.html + JavaScript"] -->|"HTTP + JSON, JWT"| F["Security filter<br/>JwtFilter"]
+    B["Browser<br/>index.html + app.js"] -->|"HTTP + JSON, JWT"| F["Security filter<br/>JwtFilter"]
     F --> C["Controllers<br/>/api/..."]
     C --> G["AccessGuard<br/>ownership checks"]
     C --> S["Services<br/>business rules"]
@@ -16,7 +16,7 @@ flowchart LR
 
 | Layer | Package | Responsibility |
 |---|---|---|
-| Presentation | `resources/static/index.html` | The dashboard: login, accounts, transfer, transactions, profile |
+| Presentation | `resources/static/` (`index.html`, `app.css`, `app.js`) | The dashboard: login, dashboard, cards, send, activity, analytics, contacts, profile. Responsive, with a bottom tab bar on phones |
 | Security | `security/`, `config/SecurityConfig` | Reads the JWT, signs in the user for the request, checks who owns what |
 | Controllers | `controller/` | Receive requests, check access, return the same JSON envelope every time |
 | Services | `service/` | Business rules: transfers, limits, reports, deletion requests |
@@ -83,7 +83,6 @@ This is a demo, so some things are left simple on purpose.
 
 | Limit | Effect | Possible improvement |
 |---|---|---|
-| `GET /api/accounts` lists every customer's accounts | The transfer screen needs it to pick a destination, but it shows other customers' names and balances | Return only a name and account number, or look the destination up by account number |
 | `GET /api/reports/summary` is bank-wide | Any logged-in user can see bank totals | Restrict it to an admin role |
 | No limit on login attempts | Passwords could be guessed slowly | Add rate limiting or a lockout |
 | No locking for simultaneous transfers | Two transfers from the same account at the same moment could both pass the balance check | Add optimistic or pessimistic locking |

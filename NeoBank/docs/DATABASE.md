@@ -32,6 +32,7 @@ erDiagram
 | `balance` | Money in the account (for credit accounts, the amount owed) |
 | `credit_limit`, `available_credit` | Only for credit accounts |
 | `user_id` | The owner |
+| `frozen` | `true` while frozen. Nullable so older rows count as not frozen |
 | `created_at` | When it was opened |
 
 ### `transactions`
@@ -45,6 +46,16 @@ erDiagram
 | `description`, `status`, `timestamp` | Text, `COMPLETED`, and when it happened |
 | `transfer_ref` | Shared by the debit and credit lines of one transfer |
 | `counterpart_account_number`, `counterpart_email` | The other side of a transfer |
+
+### `contacts`
+
+| Column | Notes |
+|---|---|
+| `id` | Primary key |
+| `user_id` | The owner of the contact |
+| `name` | Display name, up to 60 characters |
+| `account_number` | The saved account number. Unique together with `user_id` |
+| `created_at` | When it was saved |
 
 ### `deletion_requests`
 

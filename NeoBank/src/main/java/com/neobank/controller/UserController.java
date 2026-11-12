@@ -2,6 +2,7 @@ package com.neobank.controller;
 
 import com.neobank.security.AccessGuard;
 import com.neobank.model.dto.ApiResponse;
+import com.neobank.model.dto.ChangePasswordRequest;
 import com.neobank.model.dto.CreateUserRequest;
 import com.neobank.model.dto.UserResponse;
 import com.neobank.service.UserService;
@@ -64,5 +65,13 @@ public class UserController {
         String pictureData = body.get("profilePicture");
         UserResponse updated = userService.updateProfilePicture(id, pictureData);
         return ResponseEntity.ok(ApiResponse.success(updated, "Profile picture updated"));
+    }
+
+    @PostMapping("/me/password")
+    @Operation(summary = "Change your password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @jakarta.validation.Valid @RequestBody ChangePasswordRequest request) {
+        userService.changePassword(guard.currentUserId(), request.getCurrentPassword(), request.getNewPassword());
+        return ResponseEntity.ok(ApiResponse.success(null, "Password changed"));
     }
 }

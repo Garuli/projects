@@ -27,4 +27,5 @@ public class AccountResponse {
     private Long userId;
     private String userName;
     private LocalDateTime createdAt;
+    private boolean frozen;
 }

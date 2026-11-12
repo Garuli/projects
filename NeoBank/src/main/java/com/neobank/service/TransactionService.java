@@ -90,6 +90,9 @@ public class TransactionService {
         Account source = accountService.getAccountEntityByNumber(request.getFromAccountNumber());
         Account target = accountService.getAccountEntityByNumber(request.getToAccountNumber());
 
+        if (source.isFrozen()) {
+            throw new IllegalStateException("This account is frozen. Unfreeze it to send money.");
+        }
         if (source.getId().equals(target.getId())) {
             throw new IllegalArgumentException("Source and destination accounts must be different");
         }

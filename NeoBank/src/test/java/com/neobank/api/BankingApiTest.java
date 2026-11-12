@@ -13,6 +13,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -135,5 +137,122 @@ class BankingApiTest {
     @Test
     void transferOverTheLimitIsRejected() throws Exception {
         assertEquals(422, transfer(aliceToken, "NEO-000002", "NEO-000003", "1000000.00"));
+    }
+
+    // ── Freeze ───────────────────────────────────────────────────────────────
+
+    private long accountId(String token, long userId, String accountNumber) throws Exception {
+        MvcResult r = mvc.perform(get("/api/accounts/user/" + userId).header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk()).andReturn();
+        for (JsonNode a : json.readTree(r.getResponse().getContentAsString()).get("data")) {
+            if (a.get("accountNumber").asText().equals(accountNumber)) return a.get("id").asLong();
+        }
+        throw new AssertionError("account not found: " + accountNumber);
+    }
+
+    @Test
+    void frozenAccountCannotSendButUnfrozenCan() throws Exception {
+        long id = accountId(aliceToken, aliceId, "NEO-000001");
+        mvc.perform(post("/api/accounts/" + id + "/freeze").header("Authorization", "Bearer " + aliceToken))
+                .andExpect(status().isOk());
+        try {
+            assertEquals(400, transfer(aliceToken, "NEO-000001", "NEO-000002", "1.00"));
+        } finally {
+            mvc.perform(post("/api/accounts/" + id + "/unfreeze").header("Authorization", "Bearer " + aliceToken))
+                    .andExpect(status().isOk());
+        }
+        assertEquals(200, transfer(aliceToken, "NEO-000001", "NEO-000002", "1.00"));
+    }
+
+    @Test
+    void userCannotFreezeSomeoneElsesAccount() throws Exception {
+        long id = accountId(aliceToken, aliceId, "NEO-000001");
+        mvc.perform(post("/api/accounts/" + id + "/freeze").header("Authorization", "Bearer " + bobToken))
+                .andExpect(status().isForbidden());
+    }
+
+    // ── Contacts ─────────────────────────────────────────────────────────────
+
+    private int addContact(String token, String name, String number) throws Exception {
+        return mvc.perform(post("/api/contacts").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"" + name + "\",\"accountNumber\":\"" + number + "\"}"))
+                .andReturn().getResponse().getStatus();
+    }
+
+    @Test
+    void contactsCanBeSavedListedAndDeletedByTheirOwnerOnly() throws Exception {
+        assertEquals(201, addContact(aliceToken, "Bob lunch", "NEO-000003"));
+        MvcResult r = mvc.perform(get("/api/contacts").header("Authorization", "Bearer " + aliceToken))
+                .andExpect(status().isOk()).andReturn();
+        JsonNode list = json.readTree(r.getResponse().getContentAsString()).get("data");
+        long contactId = -1;
+        for (JsonNode c : list) {
+            if (c.get("name").asText().equals("Bob lunch")) contactId = c.get("id").asLong();
+        }
+        assertTrue(contactId > 0, "the saved contact should be in the list");
+
+        // Bob cannot see or delete Alice's contact
+        mvc.perform(delete("/api/contacts/" + contactId).header("Authorization", "Bearer " + bobToken))
+                .andExpect(status().isForbidden());
+        MvcResult bobList = mvc.perform(get("/api/contacts").header("Authorization", "Bearer " + bobToken))
+                .andExpect(status().isOk()).andReturn();
+        assertEquals(0, json.readTree(bobList.getResponse().getContentAsString()).get("data").size());
+
+        mvc.perform(delete("/api/contacts/" + contactId).header("Authorization", "Bearer " + aliceToken))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void contactMustBeAnotherExistingAccountAndNotADuplicate() throws Exception {
+        assertEquals(400, addContact(aliceToken, "Nobody", "NEO-999999"));
+        assertEquals(400, addContact(aliceToken, "Me", "NEO-000002"));   // Alice's own account
+        assertEquals(201, addContact(aliceToken, "Carol", "NEO-000005"));
+        assertEquals(400, addContact(aliceToken, "Carol again", "NEO-000005"));
+    }
+
+    // ── Change password ──────────────────────────────────────────────────────
+
+    private int changePassword(String token, String current, String next) throws Exception {
+        return mvc.perform(post("/api/users/me/password").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"currentPassword\":\"" + current + "\",\"newPassword\":\"" + next + "\"}"))
+                .andReturn().getResponse().getStatus();
+    }
+
+    @Test
+    void passwordChangeNeedsTheCurrentPasswordAndTakesEffect() throws Exception {
+        String carolToken = login("carol@example.com", "carol123").get("token").asText();
+        assertEquals(400, changePassword(carolToken, "wrong-password", "newpass123"));
+        assertEquals(400, changePassword(carolToken, "carol123", "short"));
+        assertEquals(200, changePassword(carolToken, "carol123", "newpass123"));
+        assertTrue(login("carol@example.com", "newpass123").has("token"));
+        assertEquals(200, changePassword(carolToken, "newpass123", "carol123"));   // put it back
+    }
+
+    // ── Opening deposit ──────────────────────────────────────────────────────
+
+    @Test
+    void newSavingsAccountOpensWithTheDepositAndRecordsIt() throws Exception {
+        var res = mvc.perform(post("/api/accounts").header("Authorization", "Bearer " + aliceToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"userId\":" + aliceId + ",\"type\":\"SAVINGS\",\"initialDeposit\":500}"))
+                .andReturn().getResponse();
+        assertEquals(200, res.getStatus() == 201 ? 200 : res.getStatus());
+        JsonNode acc = json.readTree(res.getContentAsString()).get("data");
+        assertEquals(0, acc.get("balance").decimalValue().compareTo(new java.math.BigDecimal("500")));
+
+        var tx = mvc.perform(get("/api/transactions/user/" + aliceId).header("Authorization", "Bearer " + aliceToken))
+                .andReturn().getResponse().getContentAsString();
+        assertTrue(tx.contains(acc.get("accountNumber").asText()));
+    }
+
+    @Test
+    void negativeOpeningDepositIsRefused() throws Exception {
+        int status = mvc.perform(post("/api/accounts").header("Authorization", "Bearer " + aliceToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"userId\":" + aliceId + ",\"type\":\"CURRENT\",\"initialDeposit\":-5}"))
+                .andReturn().getResponse().getStatus();
+        assertEquals(400, status);
     }
 }

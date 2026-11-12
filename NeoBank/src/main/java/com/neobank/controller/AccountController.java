@@ -57,9 +57,10 @@ public class AccountController {
      * @return ApiResponse<List<AccountResponse>> with 200 status
      */
     @GetMapping
-    @Operation(summary = "List all accounts (sorted by balance, descending)")
+    @Operation(summary = "List your accounts")
     public ResponseEntity<ApiResponse<List<AccountResponse>>> getAllAccounts() {
-        List<AccountResponse> accounts = accountService.getAllAccounts();
+        // Only the logged-in user's accounts, so other customers' balances stay private.
+        List<AccountResponse> accounts = accountService.getAccountsByUser(guard.currentUserId());
         return ResponseEntity.ok(ApiResponse.success(accounts,
                 "Retrieved " + accounts.size() + " accounts"));
     }
@@ -107,5 +108,19 @@ public class AccountController {
         guard.requireSelf(userId);
         List<AccountResponse> accounts = accountService.getAccountsByUser(userId);
         return ResponseEntity.ok(ApiResponse.success(accounts));
+    }
+
+    @PostMapping("/{id}/freeze")
+    @Operation(summary = "Freeze one of your accounts (it can no longer send money)")
+    public ResponseEntity<ApiResponse<AccountResponse>> freeze(@PathVariable Long id) {
+        guard.requireAccountOwner(id);
+        return ResponseEntity.ok(ApiResponse.success(accountService.setFrozen(id, true), "Account frozen"));
+    }
+
+    @PostMapping("/{id}/unfreeze")
+    @Operation(summary = "Unfreeze one of your accounts")
+    public ResponseEntity<ApiResponse<AccountResponse>> unfreeze(@PathVariable Long id) {
+        guard.requireAccountOwner(id);
+        return ResponseEntity.ok(ApiResponse.success(accountService.setFrozen(id, false), "Account unfrozen"));
     }
 }

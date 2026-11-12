@@ -42,10 +42,13 @@ public class AccountService {
 
     private final AccountJpaRepository accountRepo;
     private final AccountFactory       accountFactory;
+    private final com.neobank.repository.TransactionJpaRepository txRepo;
     private final AccountNumberGenerator numberGenerator;
     private final UserService          userService;
 
     /** DEBIT account types — traditional bank accounts, always open at $0. */
+    private static final BigDecimal MAX_OPENING_DEPOSIT = new BigDecimal("1000000");
+
     private static final Set<AccountType> DEBIT_TYPES =
             Set.of(AccountType.SAVINGS, AccountType.CURRENT, AccountType.CHECKING);
 
@@ -92,9 +95,16 @@ public class AccountService {
         BigDecimal availableCredit = null;
 
         if (DEBIT_TYPES.contains(type)) {
-            // DEBIT: always opens at $0 — the user's own money, funded later via deposit
-            category     = AccountCategory.DEBIT;
-            openingBalance = BigDecimal.ZERO;
+            // DEBIT: optional opening deposit (defaults to $0), capped for the demo
+            category = AccountCategory.DEBIT;
+            BigDecimal deposit = request.getInitialDeposit() == null ? BigDecimal.ZERO : request.getInitialDeposit();
+            if (!isValidDeposit.test(deposit)) {
+                throw new IllegalArgumentException("Opening deposit cannot be negative.");
+            }
+            if (deposit.compareTo(MAX_OPENING_DEPOSIT) > 0) {
+                throw new IllegalArgumentException("Opening deposit cannot be more than $" + MAX_OPENING_DEPOSIT.toPlainString() + ".");
+            }
+            openingBalance = deposit;
 
         } else if (type == AccountType.BUSINESS) {
             // BUSINESS: seed capital — opening balance equals the initial deposit entered
@@ -141,6 +151,18 @@ public class AccountService {
         account.setCategory(category);
 
         Account saved = accountRepo.save(account);
+        if (openingBalance.compareTo(BigDecimal.ZERO) > 0) {
+            // record the opening deposit so history, analytics and the balance always agree
+            txRepo.save(com.neobank.model.entity.Transaction.builder()
+                    .account(saved)
+                    .type(com.neobank.model.entity.Transaction.TransactionType.CREDIT)
+                    .amount(openingBalance)
+                    .description("Opening deposit")
+                    .balanceAfter(openingBalance)
+                    .status("COMPLETED")
+                    .timestamp(java.time.LocalDateTime.now())
+                    .build());
+        }
         log.info("Created {} account number={} type={} for userId={}",
                 category, saved.getAccountNumber(), saved.getType(), owner.getId());
         return toResponse(saved);
@@ -248,6 +270,15 @@ public class AccountService {
 
     // ── HELPERS ──────────────────────────────────────────────────────────────
 
+    /** Freezes or unfreezes an account. A frozen account cannot send money but can still receive it. */
+    @Transactional
+    public AccountResponse setFrozen(Long id, boolean frozen) {
+        Account account = accountRepo.findById(id)
+                .orElseThrow(() -> new AccountNotFoundException(id));
+        account.setFrozen(frozen);
+        return toResponse(accountRepo.save(account));
+    }
+
     private AccountResponse toResponse(Account a) {
         String num = a.getAccountNumber();
         String masked = num.length() >= 4 ? num.substring(num.length() - 4) : num;
@@ -264,6 +295,7 @@ public class AccountService {
                 .userId(a.getUser() != null ? a.getUser().getId() : null)
                 .userName(a.getUser() != null ? a.getUser().getName() : null)
                 .createdAt(a.getCreatedAt())
+                .frozen(a.isFrozen())
                 .build();
     }
 }
