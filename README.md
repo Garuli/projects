@@ -11,6 +11,7 @@ A collection of the software projects I have built. Every project lives in its o
 | [Motion](Motion/) | A Notion-style workspace prototype: pages, databases with table, board, calendar and list views, and a local AI assistant (Ollama, runs on your computer) | Python, Flask, SQLite, JavaScript, Ollama | Working. Team course project |
 | [NeoBank](NeoBank/) | A banking system with a web dashboard and REST API: accounts, transfers with business rules, transaction history, reports, JWT login and tests | Java 21, Spring Boot, JPA, H2, JWT, Maven | Working. Also used as a Software Engineering course project at UNYT |
 | [Tame Impala fan site](Tame-Impala/) | An unofficial multi-page fan site: an in-page music player with official videos, album pages with real covers, live clips, short films, tour dates and a demo shop | HTML, CSS, JavaScript, YouTube IFrame API | Working. Web development class project, rebuilt with real data |
+| [Split It](Split-It/) | A bill splitter for phones and desktop: scan a receipt (in-browser OCR, optional AI), split by item, percent or equally, find friends by code, QR or contacts, build your own avatar, and track who has paid | Node.js, Express, SQLite, JavaScript, Tesseract OCR | Working. Personal project, 28 automated tests |
 
 More projects will be added here as I clean them up and document them.
 
@@ -32,6 +33,13 @@ projects/
 │   ├── css/           ← style.css
 │   ├── js/            ← data.js (content) and app.js (behaviour)
 │   └── docs/          ← architecture, data guide, screenshots
+├── Split-It/          ← the bill splitter (see Split-It/README.md)
+│   ├── README.md
+│   ├── package.json
+│   ├── src/           ← server, split maths, database
+│   ├── public/        ← the web app (phone-first)
+│   ├── test/          ← 28 automated tests
+│   └── docs/          ← screenshots
 └── Motion/            ← the Motion project (see Motion/README.md)
     ├── README.md
     ├── app.py
@@ -85,3 +93,13 @@ python3 -m http.server 8000
 ```
 
 Then open http://localhost:8000. More details are in [Tame-Impala/README.md](Tame-Impala/README.md).
+
+For Split It (needs Node.js 20 or newer):
+
+```bash
+cd projects/Split-It
+npm install
+npm start
+```
+
+Then open http://localhost:3000 and log in with `alex@example.com` / `alex123`. More details, including how to try it on a phone, are in [Split-It/README.md](Split-It/README.md).

@@ -18,3 +18,6 @@ __pycache__/
 # archives
 *.zip
 _tmp/
+
+# Node
+node_modules/
