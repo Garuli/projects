@@ -1,0 +1,18 @@
+# Build output
+target/
+
+# Local database files (created when the app runs)
+data/
+*.mv.db
+*.trace.db
+
+# Secrets and local settings
+.env
+*.env
+application-local.properties
+
+# Editors and OS
+.vscode/
+.idea/
+*.iml
+.DS_Store

@@ -9,6 +9,7 @@ A collection of the software projects I have built. Every project lives in its o
 | Project | What it is | Built with | Status |
 |---|---|---|---|
 | [Motion](Motion/) | A Notion-style workspace prototype: pages, databases with table, board, calendar and list views, and a local AI assistant (Ollama, runs on your computer) | Python, Flask, SQLite, JavaScript, Ollama | Working. Team course project |
+| [NeoBank](NeoBank/) | A banking system with a web dashboard and REST API: accounts, transfers with business rules, transaction history, reports, JWT login and tests | Java 21, Spring Boot, JPA, H2, JWT, Maven | Working. Also used as a Software Engineering course project at UNYT |
 | [Tame Impala fan site](Tame-Impala/) | An unofficial multi-page fan site: an in-page music player with official videos, album pages with real covers, live clips, short films, tour dates and a demo shop | HTML, CSS, JavaScript, YouTube IFrame API | Working. Web development class project, rebuilt with real data |
 
 More projects will be added here as I clean them up and document them.
@@ -20,6 +21,11 @@ projects/
 ├── README.md          ← you are here
 ├── .gitignore         ← keeps virtual environments, databases and secrets out of git
 ├── .gitattributes     ← keeps line endings consistent across Windows, macOS and Linux
+├── NeoBank/           ← the banking app (see NeoBank/README.md)
+│   ├── README.md
+│   ├── pom.xml
+│   ├── src/           ← main/java (code), main/resources (settings, dashboard), test/
+│   └── docs/          ← architecture, API, database, screenshots
 ├── Tame-Impala/       ← the fan site (see Tame-Impala/README.md)
 │   ├── README.md
 │   ├── index.html, music.html, albums.html, live.html, tours.html, films.html, band.html, shop.html
@@ -61,6 +67,15 @@ cd projects/Motion
 ```
 
 Then continue with the quick start in [Motion/README.md](Motion/README.md).
+
+For NeoBank (needs Java 21 and Maven):
+
+```bash
+cd projects/NeoBank
+mvn spring-boot:run
+```
+
+Then open http://localhost:8080. More details are in [NeoBank/README.md](NeoBank/README.md).
 
 For the Tame Impala fan site, which needs no installation:
 

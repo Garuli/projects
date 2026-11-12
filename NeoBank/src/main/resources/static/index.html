@@ -1,0 +1,1523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NeoBank — Smart Banking</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Design Tokens ────────────────────────────────────────────────────── */
+    :root {
+      --bg:           #07111f;
+      --surface:      #0e1c2f;
+      --surface-2:    #162438;
+      --accent:       #2563eb;
+      --accent-light: #3b82f6;
+      --accent-grad:  linear-gradient(135deg, #1e3a6e, #2563eb);
+      --success:      #10b981;
+      --danger:       #ef4444;
+      --text:         #f1f5f9;
+      --muted:        #64748b;
+      --border:       rgba(255,255,255,0.07);
+      --r-card:       16px;
+      --r-btn:        50px;
+      --r-input:      10px;
+      --shadow:       0 4px 32px rgba(0,0,0,0.5);
+    }
+
+    /* ── Reset ────────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(37,99,235,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 90%, rgba(30,58,110,0.1) 0%, transparent 60%);
+      background-attachment: fixed;
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    a { text-decoration: none; color: inherit; }
+    button { cursor: pointer; font-family: inherit; }
+    input, select, textarea { font-family: inherit; }
+
+    /* ── Auth Overlay ─────────────────────────────────────────────────────── */
+    #auth-overlay {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(4, 10, 20, 0.92);
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(6px);
+    }
+    #auth-overlay.hidden { display: none; }
+    .auth-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 40px;
+      width: 420px;
+      max-width: 95vw;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+    }
+    .auth-logo {
+      font-size: 2rem; font-weight: 700;
+      color: var(--accent-light);
+      letter-spacing: -0.04em;
+      text-align: center; margin-bottom: 8px;
+    }
+    .auth-tagline {
+      text-align: center; color: var(--muted);
+      font-size: 0.85rem; margin-bottom: 28px;
+    }
+    .auth-tabs {
+      display: flex; border-bottom: 1px solid var(--border); margin-bottom: 24px;
+    }
+    .auth-tab {
+      flex: 1; padding: 10px; text-align: center;
+      font-size: 0.9rem; font-weight: 600;
+      color: var(--muted); cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .auth-tab.active { color: var(--accent-light); border-bottom-color: var(--accent-light); }
+    .auth-panel { display: none; }
+    .auth-panel.active { display: block; }
+    .auth-error {
+      background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 8px; padding: 10px 14px;
+      font-size: 0.85rem; color: #fca5a5;
+      margin-bottom: 16px; display: none;
+    }
+    .auth-error.show { display: block; }
+
+    /* ── Navigation ───────────────────────────────────────────────────────── */
+    .navbar {
+      background: rgba(14, 28, 47, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 clamp(16px, 4vw, 32px);
+      display: flex; align-items: center;
+      justify-content: space-between;
+      height: 64px; position: sticky; top: 0; z-index: 100;
+    }
+    .navbar-logo {
+      font-size: 1.6rem; font-weight: 700;
+      color: var(--accent-light); letter-spacing: -0.04em;
+      flex-shrink: 0;
+    }
+    .navbar-nav {
+      display: flex; gap: 4px; list-style: none;
+      overflow-x: auto; scrollbar-width: none;
+    }
+    .navbar-nav::-webkit-scrollbar { display: none; }
+    .navbar-nav a {
+      padding: 7px 12px; border-radius: 8px;
+      font-size: 0.82rem; font-weight: 500;
+      color: var(--muted); white-space: nowrap;
+      transition: background 0.15s, color 0.15s;
+    }
+    .navbar-nav a:hover, .navbar-nav a.active {
+      background: var(--surface-2); color: var(--text);
+    }
+    .navbar-right {
+      display: flex; gap: 10px; align-items: center; flex-shrink: 0;
+    }
+    .user-pill {
+      display: flex; align-items: center; gap: 8px;
+      padding: 4px 12px 4px 4px;
+      background: var(--surface-2); border-radius: 50px;
+      font-size: 0.82rem; font-weight: 500;
+    }
+    .avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--accent-grad); display: flex;
+      align-items: center; justify-content: center;
+      font-size: 0.9rem; font-weight: 700; color: #fff;
+    }
+    .btn-logout {
+      padding: 7px 14px; border-radius: var(--r-btn);
+      font-size: 0.78rem; font-weight: 600;
+      background: rgba(239,68,68,0.12); color: #fca5a5;
+      border: 1px solid rgba(239,68,68,0.2);
+      transition: background 0.15s;
+    }
+    .btn-logout:hover { background: rgba(239,68,68,0.22); }
+
+    /* ── Layout ───────────────────────────────────────────────────────────── */
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 24px); }
+    main { flex: 1; padding: 32px 0 80px; }
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ── Cards ────────────────────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border-radius: var(--r-card);
+      border: 1px solid var(--border);
+      padding: 24px; box-shadow: var(--shadow);
+    }
+    .card-sm { padding: 16px; }
+    .card-title {
+      font-size: 0.72rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--muted); margin-bottom: 8px;
+    }
+
+    /* ── Responsive grid ──────────────────────────────────────────────────── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .grid-stat { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; }
+    @media (max-width: 768px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    }
+
+    /* ── Buttons ──────────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 24px; border-radius: var(--r-btn);
+      font-size: 0.875rem; font-weight: 600; border: none;
+      transition: opacity 0.15s, transform 0.15s;
+    }
+    .btn:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-ghost { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+    .btn-danger { background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.25); }
+    .btn-sm { padding: 8px 18px; font-size: 0.8rem; }
+    .btn-full { width: 100%; justify-content: center; }
+
+    /* ── Inputs ───────────────────────────────────────────────────────────── */
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block; font-size: 0.78rem; font-weight: 500;
+      color: var(--muted); margin-bottom: 6px;
+    }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%; background: var(--surface-2);
+      border: 1px solid var(--border); border-radius: var(--r-input);
+      color: var(--text); padding: 11px 14px;
+      font-size: 0.9rem; outline: none;
+      transition: border-color 0.15s;
+    }
+    .form-group input:focus, .form-group select:focus { border-color: var(--accent-light); }
+    .form-group select option { background: var(--surface-2); }
+
+    /* ── Stat tiles ──────────────────────────────────────────────────────── */
+    .stat-tile { padding: 20px; }
+    .stat-value { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+    .stat-label { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+
+    /* ── Balance hero card ────────────────────────────────────────────────── */
+    .balance-hero {
+      background: var(--accent-grad);
+      border-radius: var(--r-card); padding: 32px;
+      position: relative; overflow: hidden;
+    }
+    .balance-hero::before {
+      content: ''; position: absolute;
+      top: -80px; right: -80px;
+      width: 240px; height: 240px; border-radius: 50%;
+      background: rgba(255,255,255,0.05);
+    }
+    .balance-hero::after {
+      content: ''; position: absolute;
+      bottom: -50px; right: 60px;
+      width: 150px; height: 150px; border-radius: 50%;
+      background: rgba(255,255,255,0.04);
+    }
+    .balance-greeting { font-size: 0.9rem; color: rgba(255,255,255,0.65); margin-bottom: 4px; }
+    .balance-amount { font-size: 2.8rem; font-weight: 700; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+    .balance-label { font-size: 0.78rem; color: rgba(255,255,255,0.55); margin-top: 4px; }
+    .balance-actions { display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; }
+
+    /* ── Bank Cards — vertical stack with 3D tilt ─────────────────────────── */
+    .bank-cards-stack { display: flex; flex-direction: column; gap: 14px; }
+    .bank-card {
+      width: 100%; border-radius: 18px;
+      background: linear-gradient(135deg, #c8f000, #8bc400);
+      padding: 22px 24px;
+      display: flex; flex-direction: column; gap: 14px;
+      position: relative; overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+      transform-style: preserve-3d;
+      will-change: transform;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .bank-card::after {
+      content: ''; position: absolute;
+      right: -40px; top: -40px;
+      width: 160px; height: 160px; border-radius: 50%;
+      background: rgba(255,255,255,0.12);
+    }
+    .bank-card-top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .bank-card-logo { font-size: 1.2rem; font-weight: 700; color: #000; }
+    .bank-card-chip {
+      width: 34px; height: 26px; border-radius: 5px;
+      background: linear-gradient(135deg, #e8c84a, #c8a030);
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+    .bank-card-number { font-size: 1.05rem; font-weight: 600; color: #000; letter-spacing: 0.08em; font-variant-numeric: tabular-nums; }
+    .bank-card-bottom { display: flex; justify-content: space-between; align-items: flex-end; }
+    .bank-card-type { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; color: rgba(0,0,0,0.5); }
+    .bank-card-balance { font-size: 1.05rem; font-weight: 700; color: #000; font-variant-numeric: tabular-nums; }
+    .bank-card-name { font-size: 0.75rem; font-weight: 600; color: rgba(0,0,0,0.6); text-transform: uppercase; letter-spacing: 0.05em; }
+
+    .bank-card.blue-card  { background: linear-gradient(135deg, #1d4ed8, #3b82f6); }
+    .bank-card.blue-card .bank-card-logo,
+    .bank-card.blue-card .bank-card-number,
+    .bank-card.blue-card .bank-card-balance,
+    .bank-card.blue-card .bank-card-name { color: #fff; }
+    .bank-card.blue-card .bank-card-type { color: rgba(255,255,255,0.65); }
+    .bank-card.blue-card .bank-card-chip { background: linear-gradient(135deg, rgba(255,255,255,0.4), rgba(255,255,255,0.2)); }
+
+    .bank-card.purple-card { background: linear-gradient(135deg, #5b21b6, #7c3aed); }
+    .bank-card.purple-card .bank-card-logo,
+    .bank-card.purple-card .bank-card-number,
+    .bank-card.purple-card .bank-card-balance,
+    .bank-card.purple-card .bank-card-name { color: #fff; }
+    .bank-card.purple-card .bank-card-type { color: rgba(255,255,255,0.65); }
+    .bank-card.purple-card .bank-card-chip { background: linear-gradient(135deg, rgba(255,255,255,0.4), rgba(255,255,255,0.2)); }
+
+    /* ── Transactions list ────────────────────────────────────────────────── */
+    .tx-list { list-style: none; }
+    .tx-item { display: flex; align-items: center; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--border); }
+    .tx-item:last-child { border-bottom: none; }
+    .tx-icon {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: var(--surface-2); display: flex;
+      align-items: center; justify-content: center;
+      font-size: 1.1rem; flex-shrink: 0;
+    }
+    .tx-info { flex: 1; min-width: 0; }
+    .tx-desc { font-size: 0.875rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tx-date { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+    .tx-amount { font-size: 0.9rem; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; flex-shrink: 0; }
+    .tx-amount.credit { color: var(--success); }
+    .tx-amount.debit { color: var(--text); }
+
+    /* ── Badge ───────────────────────────────────────────────────────────── */
+    .badge {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      font-size: 0.68rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .badge-savings  { background: rgba(16,185,129,0.12); color: var(--success); }
+    .badge-current  { background: rgba(37,99,235,0.15); color: var(--accent-light); }
+    .badge-business { background: rgba(124,58,237,0.15); color: #a78bfa; }
+    .badge-student  { background: rgba(245,158,11,0.12); color: #fcd34d; }
+    .badge-checking { background: rgba(14,165,233,0.15); color: #38bdf8; }
+    .badge-premium  { background: rgba(236,72,153,0.15); color: #f472b6; }
+    .badge-credit   { background: rgba(16,185,129,0.12); color: var(--success); }
+    .badge-debit    { background: rgba(239,68,68,0.12); color: #fca5a5; }
+    .badge-pending  { background: rgba(245,158,11,0.12); color: #fcd34d; }
+    .badge-completed{ background: rgba(16,185,129,0.12); color: var(--success); }
+
+    /* ── Data table ──────────────────────────────────────────────────────── */
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th {
+      text-align: left; font-size: 0.72rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--muted); padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .data-table td { padding: 13px 14px; font-size: 0.85rem; border-bottom: 1px solid var(--border); }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: rgba(255,255,255,0.02); }
+    .table-wrap { overflow-x: auto; }
+
+    /* ── Section header ──────────────────────────────────────────────────── */
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .section-title { font-size: 1rem; font-weight: 600; letter-spacing: -0.01em; }
+
+    /* ── Filter bar ──────────────────────────────────────────────────────── */
+    .filter-bar { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 20px; }
+    .filter-bar .form-group { margin-bottom: 0; flex: 1; min-width: 140px; }
+
+    /* ── Transfer result card ────────────────────────────────────────────── */
+    .transfer-result-card {
+      border-radius: 14px; padding: 24px; display: flex; flex-direction: column; gap: 14px;
+    }
+    .transfer-result-card.success { background: rgba(16,185,129,0.07); border: 1px solid rgba(16,185,129,0.25); }
+    .transfer-result-card.failed  { background: rgba(239,68,68,0.07);  border: 1px solid rgba(239,68,68,0.25); }
+    .transfer-status-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 1rem; font-weight: 700; letter-spacing: 0.04em;
+    }
+    .transfer-status-badge.success { color: var(--success); }
+    .transfer-status-badge.failed  { color: #fca5a5; }
+    .transfer-result-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.88rem; }
+    .transfer-result-row .label { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .transfer-result-row .value { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+    /* ── Transaction account picker ─────────────────────────────────────── */
+    .tx-acct-pill {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 18px; border-radius: 14px;
+      border: 2px solid var(--border); background: var(--surface);
+      cursor: pointer; transition: border-color 0.2s, background 0.2s;
+      flex-shrink: 0;
+    }
+    .tx-acct-pill:hover { border-color: var(--accent); background: var(--surface-2); }
+    .tx-acct-pill.selected { border-color: var(--accent-light); background: rgba(37,99,235,0.1); }
+    .tx-acct-pill .pill-type { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+    .tx-acct-pill .pill-number { font-size: 0.82rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .tx-acct-pill .pill-balance { font-size: 0.88rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--accent-light); }
+
+    /* ── Transaction row ─────────────────────────────────────────────────── */
+    .tx-row-amount-credit { color: var(--success); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .tx-row-amount-debit  { color: #fca5a5; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .tx-counterpart { font-size: 0.78rem; color: var(--muted); }
+    .tx-counterpart strong { color: var(--text); font-weight: 600; }
+
+    /* ── Profile ─────────────────────────────────────────────────────────── */
+    .profile-name { font-size: 1.3rem; font-weight: 700; }
+    .profile-email { font-size: 0.85rem; color: var(--muted); }
+
+    /* ── Toast ───────────────────────────────────────────────────────────── */
+    #toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+    .toast {
+      min-width: 240px; max-width: 360px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 13px 16px;
+      font-size: 0.85rem; display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      animation: toastIn 0.25s ease;
+    }
+    .toast.success { border-left: 3px solid var(--success); }
+    .toast.error   { border-left: 3px solid var(--danger); }
+    @keyframes toastIn  { from { opacity:0; transform:translateX(30px); } to { opacity:1; transform:translateX(0); } }
+    @keyframes toastOut { to   { opacity:0; transform:translateX(30px); } }
+
+    /* ── Spinner ─────────────────────────────────────────────────────────── */
+    .spinner { display:inline-block; width:17px; height:17px; border:2px solid rgba(255,255,255,0.2); border-top-color:#fff; border-radius:50%; animation:spin 0.7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .loading-overlay { display:flex; align-items:center; justify-content:center; padding:48px; color:var(--muted); gap:12px; }
+
+    /* ── Utilities ───────────────────────────────────────────────────────── */
+    .mt-1{margin-top:8px} .mt-2{margin-top:16px} .mt-3{margin-top:24px} .mt-4{margin-top:32px}
+    .mb-1{margin-bottom:8px} .mb-2{margin-bottom:16px} .mb-3{margin-bottom:24px}
+    .text-muted{color:var(--muted)} .text-accent{color:var(--accent-light)}
+    .text-success{color:var(--success)} .text-danger{color:#fca5a5}
+    .font-mono{font-variant-numeric:tabular-nums; font-weight:600}
+    .flex-between{display:flex;justify-content:space-between;align-items:center}
+    .divider{height:1px;background:var(--border);margin:20px 0}
+    .empty-state{text-align:center;padding:48px 24px;color:var(--muted)}
+    .empty-state .icon{font-size:2.8rem;margin-bottom:12px}
+    .empty-state p{font-size:0.88rem}
+    .page-title{font-size:1.4rem;font-weight:700;letter-spacing:-0.02em}
+  </style>
+</head>
+<body>
+
+<!-- ── Auth Overlay ────────────────────────────────────────────────────────── -->
+<div id="auth-overlay">
+  <div class="auth-card">
+    <div class="auth-logo">N.</div>
+    <div class="auth-tagline">Smart Banking by NeoBank</div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchAuthTab('login')">Sign In</div>
+      <div class="auth-tab" onclick="switchAuthTab('register')">Create Account</div>
+    </div>
+
+    <!-- Login Panel -->
+    <div id="auth-login" class="auth-panel active">
+      <div id="login-error" class="auth-error"></div>
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="login-email" placeholder="alice@example.com" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="••••••••"
+               onkeydown="if(event.key==='Enter')submitLogin()" />
+      </div>
+      <button class="btn btn-primary btn-full mt-1" onclick="submitLogin()" id="btn-login">Sign In</button>
+      <p style="text-align:center;font-size:0.78rem;color:var(--muted);margin-top:14px;">
+        Demo: alice@example.com / alice123
+      </p>
+    </div>
+
+    <!-- Register Panel -->
+    <div id="auth-register" class="auth-panel">
+      <div id="register-error" class="auth-error"></div>
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="reg-name" placeholder="Alice Smith" />
+      </div>
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="reg-email" placeholder="you@example.com" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="reg-password" placeholder="Min 6 characters" />
+      </div>
+      <div class="form-group">
+        <label>Phone (optional)</label>
+        <input type="text" id="reg-phone" placeholder="+1-555-0101" />
+      </div>
+      <div class="form-group">
+        <label>Address (optional)</label>
+        <input type="text" id="reg-address" placeholder="14 Maple Street, Boston MA" />
+      </div>
+      <button class="btn btn-primary btn-full mt-1" onclick="submitRegister()" id="btn-register">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast Container ─────────────────────────────────────────────────────── -->
+<div id="toast-container"></div>
+
+<!-- ── Navigation ─────────────────────────────────────────────────────────── -->
+<nav class="navbar">
+  <span class="navbar-logo">N.</span>
+  <ul class="navbar-nav">
+    <li><a href="#" data-page="dashboard" class="active">Dashboard</a></li>
+    <li><a href="#" data-page="accounts">Accounts</a></li>
+    <li><a href="#" data-page="transfer">Transfer</a></li>
+    <li><a href="#" data-page="transactions">Transactions</a></li>
+    <li><a href="#" data-page="profile">Profile</a></li>
+  </ul>
+  <div class="navbar-right">
+    <div class="user-pill">
+      <div class="avatar" id="nav-avatar">?</div>
+      <span id="nav-name" style="font-size:0.82rem;font-weight:500;"></span>
+    </div>
+    <button class="btn-logout" onclick="logout()">Log out</button>
+  </div>
+</nav>
+
+<main>
+<div class="container">
+
+  <!-- ════════ DASHBOARD ════════ -->
+  <section class="page active" id="page-dashboard">
+    <div class="balance-hero mb-3">
+      <div class="balance-greeting" id="dash-greeting">Good morning —</div>
+      <div class="balance-amount font-mono" id="dash-balance">$—</div>
+      <div class="balance-label">Total balance across your accounts</div>
+      <div class="balance-actions">
+        <button class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;" onclick="navigate('transfer')">+ Transfer Money</button>
+        <button class="btn btn-sm" style="background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);" onclick="navigate('accounts')">View Accounts</button>
+      </div>
+    </div>
+
+    <div class="grid-stat mb-3">
+      <div class="card stat-tile">
+        <div class="card-title">My Accounts</div>
+        <div class="stat-value" id="stat-accounts">—</div>
+      </div>
+      <div class="card stat-tile">
+        <div class="card-title">Transactions</div>
+        <div class="stat-value" id="stat-transactions">—</div>
+      </div>
+      <div class="card stat-tile">
+        <div class="card-title">Total Credited</div>
+        <div class="stat-value text-success font-mono" id="stat-credited">—</div>
+      </div>
+      <div class="card stat-tile">
+        <div class="card-title">Total Debited</div>
+        <div class="stat-value text-danger font-mono" id="stat-debited">—</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="section-header">
+          <span class="section-title">My Cards</span>
+          <button class="btn btn-sm btn-primary" onclick="navigate('accounts')">All Accounts</button>
+        </div>
+        <div class="bank-cards-stack" id="dash-cards">
+          <div class="loading-overlay"><div class="spinner"></div> Loading…</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-header">
+          <span class="section-title">Recent Transactions</span>
+          <button class="btn btn-sm btn-ghost" onclick="navigate('transactions')">View All</button>
+        </div>
+        <ul class="tx-list" id="dash-tx-list">
+          <div class="loading-overlay"><div class="spinner"></div> Loading…</div>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ ACCOUNTS ════════ -->
+  <section class="page" id="page-accounts">
+    <div class="flex-between mb-3">
+      <h1 class="page-title">My Accounts</h1>
+      <button class="btn btn-primary btn-sm" onclick="openCreateAccountModal()">+ Open Account</button>
+    </div>
+    <div id="accounts-list-container">
+      <div class="loading-overlay"><div class="spinner"></div> Loading…</div>
+    </div>
+
+    <!-- Create Account Modal -->
+    <div id="modal-create-account" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:500;align-items:center;justify-content:center;">
+      <div class="card" style="width:440px;max-width:95vw;">
+        <div class="flex-between mb-3">
+          <h3 style="font-size:1rem;font-weight:600;">Open New Account</h3>
+          <button onclick="closeModal('modal-create-account')" style="background:none;border:none;color:var(--muted);font-size:1.4rem;cursor:pointer;line-height:1;">✕</button>
+        </div>
+
+        <!-- DEBIT / CREDIT tabs -->
+        <div style="display:flex;border-bottom:1px solid var(--border);margin-bottom:20px;">
+          <div id="ca-tab-debit" class="auth-tab active" onclick="switchAccountTab('debit')" style="flex:1;padding:9px;text-align:center;font-size:0.85rem;font-weight:600;cursor:pointer;">
+            Debit Account
+          </div>
+          <div id="ca-tab-credit" class="auth-tab" onclick="switchAccountTab('credit')" style="flex:1;padding:9px;text-align:center;font-size:0.85rem;font-weight:600;cursor:pointer;">
+            Credit Account
+          </div>
+        </div>
+
+        <!-- DEBIT panel -->
+        <div id="ca-panel-debit">
+          <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:0.82rem;color:#fcd34d;line-height:1.5;">
+            ⚠ This debit account will start with <strong>$0.00 balance</strong>. You can deposit cash at the nearest bank or ATM before using it.<br/>
+            A monthly maintenance fee of <strong>$0.50</strong> applies.
+          </div>
+          <div class="form-group">
+            <label>Account Type</label>
+            <select id="ca-debit-type">
+              <option value="SAVINGS">Savings — 3.5% interest p.a., $10K transfer limit</option>
+              <option value="CURRENT">Current — 1.0% interest p.a., −$500 overdraft</option>
+              <option value="CHECKING">Checking — 0.5% interest p.a., −$250 overdraft</option>
+            </select>
+          </div>
+          <button class="btn btn-primary btn-full mt-2" onclick="submitCreateAccount('debit')">Open Debit Account</button>
+        </div>
+
+        <!-- CREDIT panel -->
+        <div id="ca-panel-credit" style="display:none;">
+          <div class="form-group">
+            <label>Account Type</label>
+            <select id="ca-credit-type" onchange="updateCreditLimitHint()">
+              <option value="STUDENT">Student — 4.5% interest p.a., max limit $2,000</option>
+              <option value="BUSINESS">Business — 2.0% interest p.a., max limit $100,000</option>
+              <option value="PREMIUM">Premium — 4.5% interest p.a., max limit $500,000</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label id="ca-amount-label">Requested Credit Limit ($) <span id="ca-limit-hint" style="font-size:0.75rem;color:var(--muted);">max $2,000</span></label>
+            <input type="number" id="ca-credit-limit" step="0.01" min="100" max="2000" placeholder="e.g. 1500" oninput="validateCreditLimitInput()" />
+            <div id="ca-credit-limit-error" style="display:none;font-size:0.78rem;color:#fca5a5;margin-top:4px;"></div>
+          </div>
+          <button class="btn btn-primary btn-full mt-2" onclick="submitCreateAccount('credit')">Open Credit Account</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ TRANSFER ════════ -->
+  <section class="page" id="page-transfer">
+    <h1 class="page-title mb-3">Transfer Funds</h1>
+    <div class="grid-2">
+      <div class="card">
+        <h3 class="mb-3" style="font-size:1rem;font-weight:600;">New Transfer</h3>
+        <div class="form-group">
+          <label>From Account</label>
+          <select id="tr-from"></select>
+        </div>
+        <div class="form-group">
+          <label>To Account</label>
+          <select id="tr-to"></select>
+        </div>
+        <div class="form-group">
+          <label>Amount ($)</label>
+          <input type="number" id="tr-amount" step="0.01" min="0.01" placeholder="0.00" />
+        </div>
+        <div class="form-group">
+          <label>Description (optional)</label>
+          <input type="text" id="tr-desc" placeholder="Payment note…" maxlength="255" />
+        </div>
+        <button class="btn btn-primary btn-full mt-2" id="btn-transfer" onclick="submitTransfer()">Send Money</button>
+      </div>
+      <div class="card">
+        <h3 class="mb-2" style="font-size:0.88rem;font-weight:600;color:var(--muted);">Transfer Rules by Account Type</h3>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div class="card card-sm" style="background:var(--surface-2);">
+            <div class="badge badge-savings mb-1">Savings</div>
+            <div style="font-size:0.84rem;">Max: <strong>$10,000</strong> &nbsp;|&nbsp; Overdraft: <strong>None</strong></div>
+          </div>
+          <div class="card card-sm" style="background:var(--surface-2);">
+            <div class="badge badge-current mb-1">Current</div>
+            <div style="font-size:0.84rem;">Max: <strong>$25,000</strong> &nbsp;|&nbsp; Overdraft: <strong>−$500</strong></div>
+          </div>
+          <div class="card card-sm" style="background:var(--surface-2);">
+            <div class="badge badge-business mb-1">Business</div>
+            <div style="font-size:0.84rem;">Max: <strong>$100,000</strong> &nbsp;|&nbsp; Overdraft: <strong>None</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Transfer Result — status only, separate from transaction history -->
+    <div class="card mt-3" id="transfer-result" style="display:none;">
+      <div class="section-title mb-3">Transfer Result</div>
+      <div id="transfer-result-body"></div>
+    </div>
+  </section>
+
+  <!-- ════════ TRANSACTIONS ════════ -->
+  <section class="page" id="page-transactions">
+    <div class="flex-between mb-3">
+      <h1 class="page-title">Transaction History</h1>
+    </div>
+
+    <!-- Account picker cards -->
+    <div id="tx-account-cards" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
+      <div class="loading-overlay"><div class="spinner"></div></div>
+    </div>
+
+    <!-- Date filter bar (shown after account selected) -->
+    <div id="tx-filter-bar" style="display:none;" class="card mb-3">
+      <div class="filter-bar">
+        <div class="form-group">
+          <label>From Date</label>
+          <input type="datetime-local" id="filter-from" />
+        </div>
+        <div class="form-group">
+          <label>To Date</label>
+          <input type="datetime-local" id="filter-to" />
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="applyTransactionFilter()" style="height:42px;margin-top:auto;">Filter</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearTransactionFilter()" style="height:42px;margin-top:auto;">Clear</button>
+      </div>
+    </div>
+
+    <!-- Transaction table -->
+    <div class="card">
+      <div id="tx-selected-account-header" style="margin-bottom:16px;display:none;">
+        <span class="section-title" id="tx-account-label"></span>
+        <span class="text-muted" style="font-size:0.8rem;margin-left:10px;" id="tx-account-balance"></span>
+      </div>
+      <div class="table-wrap" id="transactions-table-container">
+        <div class="empty-state">
+          <div class="icon">💳</div>
+          <p>Select an account card above to view its transactions.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ PROFILE ════════ -->
+  <section class="page" id="page-profile">
+    <h1 class="page-title mb-3">My Profile</h1>
+    <div class="card mb-3" style="text-align:center;padding:40px 24px;">
+      <!-- Avatar with upload -->
+      <div style="position:relative;display:inline-block;margin-bottom:16px;">
+        <div id="profile-avatar-wrap" style="width:96px;height:96px;border-radius:50%;overflow:hidden;background:var(--accent-grad);display:flex;align-items:center;justify-content:center;font-size:2.2rem;font-weight:700;color:#fff;cursor:pointer;border:3px solid var(--border);margin:0 auto;" onclick="document.getElementById('profile-pic-input').click()" title="Click to change photo">
+          <span id="profile-avatar-initials">?</span>
+          <img id="profile-avatar-img" style="display:none;width:100%;height:100%;object-fit:cover;" alt="Profile" />
+        </div>
+        <div style="position:absolute;bottom:0;right:0;width:28px;height:28px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:0.75rem;border:2px solid var(--bg);" onclick="document.getElementById('profile-pic-input').click()">✎</div>
+        <input type="file" id="profile-pic-input" accept="image/*" style="display:none;" onchange="handleProfilePicUpload(this)" />
+      </div>
+      <div class="profile-name" id="profile-name" style="font-size:1.5rem;margin-bottom:4px;">—</div>
+      <div class="profile-email" id="profile-email" style="font-size:0.88rem;color:var(--muted);margin-bottom:12px;">—</div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+        <span class="badge badge-savings" id="profile-account-count">0 accounts</span>
+        <span class="badge badge-credit" id="profile-tx-count">0 transactions</span>
+      </div>
+    </div>
+
+    <div class="grid-2 mb-3">
+      <div class="card">
+        <div class="section-title mb-3">Personal Information</div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div><div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Full Name</div><div id="info-name" style="font-size:0.9rem;font-weight:500;">—</div></div>
+          <div><div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Email</div><div id="info-email" style="font-size:0.9rem;font-weight:500;">—</div></div>
+          <div><div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Phone</div><div id="info-phone" style="font-size:0.9rem;font-weight:500;">—</div></div>
+          <div><div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Address</div><div id="info-address" style="font-size:0.9rem;font-weight:500;">—</div></div>
+          <div><div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Member Since</div><div id="info-since" style="font-size:0.9rem;font-weight:500;">—</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title mb-3">Account Overview</div>
+        <div id="profile-accounts-list"></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</main>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+//  NeoBank Frontend — Vanilla JS SPA with JWT Auth
+// ─────────────────────────────────────────────────────────────────────────────
+
+const CARD_COLORS = ['', 'blue-card', 'purple-card'];
+
+// ── Auth state ───────────────────────────────────────────────────────────────
+let currentUserId   = null;
+let currentUserName = null;
+let currentUserEmail = null;
+
+function getToken() { return localStorage.getItem('neobank_token'); }
+function setToken(t) { localStorage.setItem('neobank_token', t); }
+function clearToken() { localStorage.removeItem('neobank_token'); }
+
+function decodeJwt(token) {
+  try {
+    const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(b64));
+  } catch { return null; }
+}
+
+// ── Auth UI ──────────────────────────────────────────────────────────────────
+
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t, i) => {
+    t.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'));
+  });
+  document.getElementById('auth-login').classList.toggle('active', tab === 'login');
+  document.getElementById('auth-register').classList.toggle('active', tab === 'register');
+}
+
+function showAuthError(panelId, msg) {
+  const el = document.getElementById(panelId);
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 5000);
+}
+
+async function submitLogin() {
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email || !password) { showAuthError('login-error', 'Please enter email and password.'); return; }
+
+  const btn = document.getElementById('btn-login');
+  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Signing in…';
+
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      showAuthError('login-error', json.message || 'Invalid credentials.');
+    } else {
+      setToken(json.data.token);
+      initSession(json.data);
+    }
+  } catch (e) {
+    showAuthError('login-error', 'Connection error. Is the server running?');
+  } finally {
+    btn.disabled = false; btn.innerHTML = 'Sign In';
+  }
+}
+
+async function submitRegister() {
+  const name     = document.getElementById('reg-name').value.trim();
+  const email    = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const phone    = document.getElementById('reg-phone').value.trim();
+  const address  = document.getElementById('reg-address').value.trim();
+  if (!name || !email || !password) { showAuthError('register-error', 'Name, email and password are required.'); return; }
+  if (password.length < 6) { showAuthError('register-error', 'Password must be at least 6 characters.'); return; }
+
+  const btn = document.getElementById('btn-register');
+  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Creating account…';
+
+  try {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password, phone, address })
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      showAuthError('register-error', json.message || 'Registration failed.');
+    } else {
+      setToken(json.data.token);
+      initSession(json.data);
+    }
+  } catch (e) {
+    showAuthError('register-error', 'Connection error.');
+  } finally {
+    btn.disabled = false; btn.innerHTML = 'Create Account';
+  }
+}
+
+function initSession(data) {
+  currentUserId    = data.userId;
+  currentUserName  = data.name;
+  currentUserEmail = data.email;
+
+  const initials = currentUserName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  document.getElementById('nav-avatar').textContent = initials;
+  document.getElementById('nav-name').textContent   = currentUserName.split(' ')[0];
+
+  document.getElementById('auth-overlay').classList.add('hidden');
+  navigate('dashboard');
+}
+
+function logout() {
+  clearToken();
+  currentUserId = currentUserName = currentUserEmail = null;
+  document.getElementById('auth-overlay').classList.remove('hidden');
+  document.getElementById('nav-avatar').textContent = '?';
+  document.getElementById('nav-name').textContent   = '';
+}
+
+// ── Formatters ───────────────────────────────────────────────────────────────
+const fmtMoney = new Intl.NumberFormat('en-US', { style:'currency', currency:'USD', minimumFractionDigits:2 });
+const fmtDate  = d => new Date(d).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'2-digit', minute:'2-digit' });
+const money    = v => fmtMoney.format(parseFloat(v) || 0);
+
+// ── Toast ────────────────────────────────────────────────────────────────────
+function toast(message, type = 'success') {
+  const c = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${type==='success'?'✓':'✕'}</span><span>${message}</span>`;
+  c.appendChild(el);
+  setTimeout(() => { el.style.animation='toastOut 0.3s ease forwards'; setTimeout(() => el.remove(), 300); }, 3500);
+}
+
+// ── Navigation ───────────────────────────────────────────────────────────────
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.navbar-nav a').forEach(a => a.classList.remove('active'));
+  const el = document.getElementById('page-' + page);
+  const nav = document.querySelector(`.navbar-nav a[data-page="${page}"]`);
+  if (el)  el.classList.add('active');
+  if (nav) nav.classList.add('active');
+  if (page === 'dashboard')    loadDashboard();
+  if (page === 'accounts')     loadAccounts();
+  if (page === 'transfer')     loadTransferDropdowns();
+  if (page === 'transactions') loadTransactionAccountPicker();
+  if (page === 'profile')      loadProfile();
+}
+
+document.querySelectorAll('.navbar-nav a').forEach(a => {
+  a.addEventListener('click', e => { e.preventDefault(); navigate(a.dataset.page); });
+});
+
+// ── API helper (with JWT) ─────────────────────────────────────────────────────
+async function apiFetch(url, options = {}) {
+  const token = getToken();
+  const res = await fetch(url, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      ...(options.headers || {})
+    },
+    ...options
+  });
+  const json = await res.json();
+  if (res.status === 401) { logout(); throw new Error('Session expired. Please log in again.'); }
+  if (!res.ok || !json.success) throw new Error(json.message || 'Request failed');
+  return json.data;
+}
+
+// ── 3D Tilt Effect ────────────────────────────────────────────────────────────
+function applyTilt(el) {
+  el.addEventListener('mouseenter', () => {
+    el.style.transition = 'transform 0.1s ease, box-shadow 0.1s ease';
+  });
+  el.addEventListener('mousemove', e => {
+    const r  = el.getBoundingClientRect();
+    const x  = e.clientX - r.left, y = e.clientY - r.top;
+    const cx = r.width / 2, cy = r.height / 2;
+    const rX = ((y - cy) / cy) * -10;
+    const rY = ((x - cx) / cx) * 10;
+    el.style.transform = `perspective(700px) rotateX(${rX}deg) rotateY(${rY}deg) scale(1.04)`;
+    el.style.boxShadow = '0 16px 40px rgba(0,0,0,0.5)';
+  });
+  el.addEventListener('mouseleave', () => {
+    el.style.transition = 'transform 0.4s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.4s cubic-bezier(0.23, 1, 0.32, 1)';
+    el.style.transform = '';
+    el.style.boxShadow = '';
+  });
+}
+
+// ── Build bank card HTML + tilt ───────────────────────────────────────────────
+function buildBankCard(account, idx) {
+  const colorClass = CARD_COLORS[idx % CARD_COLORS.length];
+  const isCredit = account.category === 'CREDIT';
+
+  const balanceHtml = isCredit
+    ? `<div style="text-align:right;">
+        <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;opacity:0.55;">Available Credit</div>
+        <div class="bank-card-balance">${money(account.availableCredit)}</div>
+        <div style="font-size:0.68rem;opacity:0.55;">of ${money(account.creditLimit)} limit</div>
+       </div>`
+    : `<div class="bank-card-balance">${money(account.balance)}</div>`;
+
+  const wrapper = document.createElement('div');
+  wrapper.className = `bank-card ${colorClass}`;
+  wrapper.innerHTML = `
+    <div class="bank-card-top">
+      <span class="bank-card-logo">N.</span>
+      <div class="bank-card-chip"></div>
+    </div>
+    <div class="bank-card-number">•••• •••• ${escHtml(account.maskedNumber)}</div>
+    <div class="bank-card-bottom">
+      <div>
+        <div class="bank-card-name">${escHtml(account.userName || currentUserName || '')}</div>
+        <div class="bank-card-type">${escHtml(account.type)}</div>
+      </div>
+      ${balanceHtml}
+    </div>`;
+  applyTilt(wrapper);
+  return wrapper;
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  const hour = new Date().getHours();
+  const part = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+  const firstName = currentUserName?.split(' ')[0] || 'there';
+  document.getElementById('dash-greeting').textContent = `Good ${part}, ${firstName}`;
+
+  try {
+    const [report, accounts] = await Promise.all([
+      apiFetch(`/api/reports/user/${currentUserId}`),
+      apiFetch(`/api/accounts/user/${currentUserId}`)
+    ]);
+
+    document.getElementById('dash-balance').textContent      = money(report.totalBalanceAllAccounts);
+    document.getElementById('stat-accounts').textContent     = report.totalAccounts;
+    document.getElementById('stat-transactions').textContent = report.totalTransactions;
+    document.getElementById('stat-credited').textContent     = money(report.totalCredited);
+    document.getElementById('stat-debited').textContent      = money(report.totalDebited);
+
+    const stack = document.getElementById('dash-cards');
+    stack.innerHTML = '';
+    if (!accounts.length) {
+      stack.innerHTML = `<div class="empty-state"><div class="icon">💳</div><p>No accounts yet.</p></div>`;
+    } else {
+      accounts.slice(0, 3).forEach((a, i) => stack.appendChild(buildBankCard(a, i)));
+    }
+
+    const recentList = document.getElementById('dash-tx-list');
+    const txns = await apiFetch(`/api/transactions/user/${currentUserId}`).catch(() => []);
+    renderTxList(recentList, txns.slice(0, 8));
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+function renderTxList(container, txns) {
+  if (!txns?.length) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">📄</div><p>No transactions.</p></div>`;
+    return;
+  }
+  container.innerHTML = txns.map(t => {
+    const credit = t.type === 'CREDIT';
+    return `<li class="tx-item">
+      <div class="tx-icon" style="background:${credit?'rgba(16,185,129,0.1)':'rgba(239,68,68,0.1)'}">
+        ${credit ? '⬇' : '⬆'}
+      </div>
+      <div class="tx-info">
+        <div class="tx-desc">${escHtml(t.description || 'Transaction')}</div>
+        <div class="tx-date">${t.timestamp ? fmtDate(t.timestamp) : '—'}</div>
+      </div>
+      <div class="tx-amount ${credit ? 'credit' : 'debit'}">
+        ${credit ? '+' : '-'}${money(t.amount)}
+      </div>
+    </li>`;
+  }).join('');
+}
+
+// ── Accounts ──────────────────────────────────────────────────────────────────
+async function loadAccounts() {
+  const c = document.getElementById('accounts-list-container');
+  c.innerHTML = '<div class="loading-overlay"><div class="spinner"></div> Loading…</div>';
+  try {
+    const accounts = await apiFetch(`/api/accounts/user/${currentUserId}`);
+    if (!accounts.length) {
+      c.innerHTML = `<div class="card"><div class="empty-state"><div class="icon">🏦</div><p>No accounts yet. Open your first account!</p></div></div>`;
+      return;
+    }
+    c.innerHTML = `<div class="card"><div class="table-wrap"><table class="data-table">
+      <thead><tr>
+        <th>Account Number</th><th>Type</th><th>Balance / Credit</th><th>Opened</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${accounts.map(a => {
+          const isCredit = a.category === 'CREDIT';
+          const balanceCell = isCredit
+            ? `<div style="display:flex;flex-direction:column;gap:2px;">
+                <div class="font-mono" style="color:var(--success);">Avail: ${money(a.availableCredit)}</div>
+                <div style="font-size:0.75rem;color:var(--muted);">Limit: ${money(a.creditLimit)}</div>
+                ${parseFloat(a.balance) > 0 ? `<div style="font-size:0.75rem;color:#fca5a5;">Owed: ${money(a.balance)}</div>` : ''}
+               </div>`
+            : `<span class="font-mono">${money(a.balance)}</span>`;
+          const canDelete = isCredit ? (parseFloat(a.balance) === 0) : (parseFloat(a.balance) === 0);
+          return `<tr>
+            <td class="font-mono" style="font-size:0.83rem;">${escHtml(a.accountNumber)}</td>
+            <td><span class="badge badge-${a.type.toLowerCase()}">${a.type}</span></td>
+            <td>${balanceCell}</td>
+            <td style="color:var(--muted);font-size:0.78rem;">${a.createdAt ? new Date(a.createdAt).toLocaleDateString() : '—'}</td>
+            <td style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn btn-sm btn-ghost" onclick="viewAccountTx(${a.id},'${escHtml(a.accountNumber)}','${a.type}',${a.balance})">History</button>
+              ${canDelete
+                ? `<button class="btn btn-sm btn-danger" onclick="requestDeletion(${a.id})">Request Deletion</button>`
+                : `<button class="btn btn-sm" style="opacity:0.35;cursor:not-allowed;background:var(--surface-2);color:var(--muted);" title="Balance must be $0.00 to request deletion">Request Deletion</button>`
+              }
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table></div></div>`;
+  } catch (err) {
+    c.innerHTML = `<div class="card"><div class="empty-state"><p class="text-danger">${escHtml(err.message)}</p></div></div>`;
+    toast(err.message, 'error');
+  }
+}
+
+async function requestDeletion(accountId) {
+  if (!confirm('Are you sure you want to request deletion of this account? It will be processed within 5 minutes.')) return;
+  try {
+    const result = await apiFetch(`/api/accounts/${accountId}/deletion-request`, { method: 'POST' });
+    toast(result.message || 'Deletion request submitted!');
+    loadAccounts();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+function viewAccountTx(accountId, accountNumber, type, balance) {
+  navigate('transactions');
+  // picker loads async — wait for it to render pills then select the right one
+  setTimeout(() => selectTxAccount(accountId, accountNumber, type, balance), 600);
+}
+
+async function openCreateAccountModal() {
+  // Reset to debit tab on each open
+  switchAccountTab('debit');
+  document.getElementById('modal-create-account').style.display = 'flex';
+}
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+function switchAccountTab(tab) {
+  const isDebit = tab === 'debit';
+  document.getElementById('ca-tab-debit').classList.toggle('active', isDebit);
+  document.getElementById('ca-tab-credit').classList.toggle('active', !isDebit);
+  document.getElementById('ca-panel-debit').style.display  = isDebit  ? 'block' : 'none';
+  document.getElementById('ca-panel-credit').style.display = !isDebit ? 'block' : 'none';
+}
+
+const CREDIT_MAX = { STUDENT: 2000, BUSINESS: 100000, PREMIUM: 500000 };
+
+function updateCreditLimitHint() {
+  const type       = document.getElementById('ca-credit-type').value;
+  const isBusiness = type === 'BUSINESS';
+  const max        = CREDIT_MAX[type] || 0;
+  const input      = document.getElementById('ca-credit-limit');
+  const labelEl    = document.getElementById('ca-amount-label');
+
+  if (isBusiness) {
+    labelEl.textContent = 'Initial deposit (seed capital) ($)';
+    input.min = '0';
+    input.max = '';
+    input.placeholder = 'e.g. 5000';
+  } else {
+    labelEl.innerHTML = `Requested Credit Limit ($) <span id="ca-limit-hint" style="font-size:0.75rem;color:var(--muted);">max $${max.toLocaleString()}</span>`;
+    input.min = '100';
+    input.max = max;
+    input.placeholder = 'e.g. 1500';
+  }
+  input.value = '';
+  document.getElementById('ca-credit-limit-error').style.display = 'none';
+}
+
+function validateCreditLimitInput() {
+  const type       = document.getElementById('ca-credit-type').value;
+  const isBusiness = type === 'BUSINESS';
+  const val        = parseFloat(document.getElementById('ca-credit-limit').value) || 0;
+  const max        = CREDIT_MAX[type] || 0;
+  const errEl      = document.getElementById('ca-credit-limit-error');
+  if (!isBusiness && val > 0 && val < 100) {
+    errEl.textContent = 'Minimum credit limit is $100.';
+    errEl.style.display = 'block';
+  } else if (!isBusiness && val > max) {
+    errEl.textContent = `Limit $${val.toLocaleString()} exceeds the maximum of $${max.toLocaleString()} for ${type} accounts.`;
+    errEl.style.display = 'block';
+  } else {
+    errEl.style.display = 'none';
+  }
+}
+
+async function submitCreateAccount(tab) {
+  const isDebit    = tab === 'debit';
+  const type       = isDebit
+    ? document.getElementById('ca-debit-type').value
+    : document.getElementById('ca-credit-type').value;
+  const isBusiness = type === 'BUSINESS';
+
+  const body = { userId: currentUserId, type, initialDeposit: 0 };
+  let successMsg;
+
+  if (isDebit) {
+    successMsg = 'Debit account opened! Deposit cash at an ATM to fund it.';
+  } else if (isBusiness) {
+    const deposit = parseFloat(document.getElementById('ca-credit-limit').value);
+    if (isNaN(deposit) || deposit < 0) {
+      toast('Please enter a non-negative initial deposit.', 'error'); return;
+    }
+    body.initialDeposit = deposit;
+    successMsg = `Business account opened — ${money(deposit)} initial deposit`;
+  } else {
+    const limit = parseFloat(document.getElementById('ca-credit-limit').value);
+    const max   = CREDIT_MAX[type] || 0;
+    if (!limit || limit < 100) {
+      toast('Please enter a credit limit of at least $100.', 'error'); return;
+    }
+    if (limit > max) {
+      toast(`Credit limit exceeds maximum of $${max.toLocaleString()} for ${type} accounts.`, 'error'); return;
+    }
+    body.creditLimit = limit;
+    successMsg = `Credit account opened — ${money(limit)} available`;
+  }
+
+  try {
+    await apiFetch('/api/accounts', {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
+    closeModal('modal-create-account');
+    toast(successMsg);
+    loadAccounts();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+// ── Transfer ──────────────────────────────────────────────────────────────────
+async function loadTransferDropdowns() {
+  try {
+    const [myAccounts, allAccounts] = await Promise.all([
+      apiFetch(`/api/accounts/user/${currentUserId}`),
+      apiFetch('/api/accounts')
+    ]);
+    const fromOpts = myAccounts.map(a =>
+      `<option value="${escHtml(a.accountNumber)}">${escHtml(a.accountNumber)} — ${a.type} — ${money(a.balance)}</option>`
+    ).join('');
+    const toOpts = allAccounts.map(a =>
+      `<option value="${escHtml(a.accountNumber)}">${escHtml(a.accountNumber)} (${escHtml(a.userName || '')}) — ${a.type}</option>`
+    ).join('');
+    document.getElementById('tr-from').innerHTML = fromOpts;
+    document.getElementById('tr-to').innerHTML   = toOpts;
+    if (allAccounts.length > 1) document.getElementById('tr-to').selectedIndex = 1;
+  } catch (err) { toast('Failed to load accounts', 'error'); }
+}
+
+async function submitTransfer() {
+  const btn    = document.getElementById('btn-transfer');
+  const from   = document.getElementById('tr-from').value;
+  const to     = document.getElementById('tr-to').value;
+  const amount = parseFloat(document.getElementById('tr-amount').value);
+  const desc   = document.getElementById('tr-desc').value;
+
+  if (!from || !to || isNaN(amount) || amount <= 0) { toast('Please fill in all required fields', 'error'); return; }
+  if (from === to) { toast('Source and destination must differ', 'error'); return; }
+
+  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Processing…';
+
+  const resultEl = document.getElementById('transfer-result');
+  const bodyEl   = document.getElementById('transfer-result-body');
+  resultEl.style.display = 'block';
+
+  try {
+    const result = await apiFetch('/api/transfer', {
+      method: 'POST',
+      body: JSON.stringify({ fromAccountNumber: from, toAccountNumber: to, amount, description: desc })
+    });
+
+    // result is [debitTx, creditTx] — extract from/to account numbers
+    const debit  = result.find(t => t.type === 'DEBIT')  || result[0];
+    const credit = result.find(t => t.type === 'CREDIT') || result[1];
+    const sender   = debit?.accountNumber  || from;
+    const receiver = credit?.accountNumber || to;
+
+    bodyEl.innerHTML = `
+      <div class="transfer-result-card success">
+        <div class="transfer-status-badge success">✓ &nbsp;SUCCESS</div>
+        <div class="divider" style="margin:4px 0;"></div>
+        <div class="transfer-result-row">
+          <span class="label">Amount</span>
+          <span class="value font-mono" style="font-size:1.1rem;">${money(amount)}</span>
+        </div>
+        <div class="transfer-result-row">
+          <span class="label">From</span>
+          <span class="value">${escHtml(sender)}</span>
+        </div>
+        <div class="transfer-result-row">
+          <span class="label">To</span>
+          <span class="value">${escHtml(receiver)}</span>
+        </div>
+        ${desc ? `<div class="transfer-result-row"><span class="label">Note</span><span class="value">${escHtml(desc)}</span></div>` : ''}
+      </div>`;
+
+    toast(`${money(amount)} transferred successfully.`);
+    document.getElementById('tr-amount').value = '';
+    document.getElementById('tr-desc').value   = '';
+    loadTransferDropdowns();
+  } catch (err) {
+    bodyEl.innerHTML = `
+      <div class="transfer-result-card failed">
+        <div class="transfer-status-badge failed">✕ &nbsp;FAILED</div>
+        <div class="divider" style="margin:4px 0;"></div>
+        <div class="transfer-result-row">
+          <span class="label">Amount</span>
+          <span class="value font-mono">${money(amount)}</span>
+        </div>
+        <div class="transfer-result-row">
+          <span class="label">From</span>
+          <span class="value">${escHtml(from)}</span>
+        </div>
+        <div class="transfer-result-row">
+          <span class="label">To</span>
+          <span class="value">${escHtml(to)}</span>
+        </div>
+        <div class="transfer-result-row" style="margin-top:4px;">
+          <span class="label">Reason</span>
+          <span class="value text-danger" style="font-size:0.82rem;">${escHtml(err.message)}</span>
+        </div>
+      </div>`;
+    toast(err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.innerHTML = 'Send Money';
+  }
+}
+
+// ── Transactions ──────────────────────────────────────────────────────────────
+let selectedTxAccount = null; // { id, accountNumber, type, balance }
+
+async function loadTransactionAccountPicker() {
+  const wrap = document.getElementById('tx-account-cards');
+  wrap.innerHTML = '<div class="loading-overlay"><div class="spinner"></div></div>';
+  try {
+    const accounts = await apiFetch(`/api/accounts/user/${currentUserId}`);
+    wrap.innerHTML = accounts.map(a => `
+      <div class="tx-acct-pill" id="tx-pill-${a.id}" onclick="selectTxAccount(${a.id},'${escHtml(a.accountNumber)}','${a.type}',${a.balance})">
+        <div>
+          <div class="pill-type">${escHtml(a.type)}</div>
+          <div class="pill-number">${escHtml(a.accountNumber)}</div>
+        </div>
+        <div class="pill-balance">${money(a.balance)}</div>
+      </div>`).join('');
+    if (accounts.length > 0) {
+      const first = accounts[0];
+      selectTxAccount(first.id, first.accountNumber, first.type, first.balance);
+    }
+  } catch (err) {
+    wrap.innerHTML = `<div class="text-danger" style="font-size:0.85rem;">${escHtml(err.message)}</div>`;
+  }
+}
+
+function selectTxAccount(id, accountNumber, type, balance) {
+  selectedTxAccount = { id, accountNumber, type, balance };
+  document.querySelectorAll('.tx-acct-pill').forEach(p => p.classList.remove('selected'));
+  const pill = document.getElementById(`tx-pill-${id}`);
+  if (pill) pill.classList.add('selected');
+  document.getElementById('tx-filter-bar').style.display = 'block';
+  document.getElementById('tx-selected-account-header').style.display = 'block';
+  document.getElementById('tx-account-label').textContent = `${accountNumber} — ${type}`;
+  document.getElementById('tx-account-balance').textContent = `Balance: ${money(balance)}`;
+  document.getElementById('filter-from').value = '';
+  document.getElementById('filter-to').value = '';
+  loadTransactions();
+}
+
+async function loadTransactions() {
+  if (!selectedTxAccount) return;
+  const c = document.getElementById('transactions-table-container');
+  c.innerHTML = '<div class="loading-overlay"><div class="spinner"></div> Loading…</div>';
+
+  const from = document.getElementById('filter-from').value;
+  const to   = document.getElementById('filter-to').value;
+
+  try {
+    let url = `/api/transactions?accountId=${selectedTxAccount.id}`;
+    if (from) url += `&from=${encodeURIComponent(from + ':00')}`;
+    if (to)   url += `&to=${encodeURIComponent(to + ':00')}`;
+    const txns = await apiFetch(url);
+
+    if (!txns.length) {
+      c.innerHTML = `<div class="empty-state"><div class="icon">📄</div><p>No transactions for this account.</p></div>`;
+      return;
+    }
+
+    c.innerHTML = `<table class="data-table">
+      <thead><tr>
+        <th>Date &amp; Time</th>
+        <th>Amount</th>
+        <th>From / To</th>
+        <th>Description</th>
+        <th>Type</th>
+        <th>Status</th>
+        <th>Balance After</th>
+      </tr></thead>
+      <tbody>${txns.map(t => renderTxRow(t)).join('')}</tbody>
+    </table>`;
+  } catch (err) {
+    c.innerHTML = `<div class="empty-state"><p class="text-danger">${escHtml(err.message)}</p></div>`;
+    toast(err.message, 'error');
+  }
+}
+
+function renderTxRow(t) {
+  const credit = t.type === 'CREDIT';
+  const amountHtml = `<span class="${credit ? 'tx-row-amount-credit' : 'tx-row-amount-debit'}">${credit ? '+' : '−'}${money(t.amount)}</span>`;
+
+  let counterpartHtml = '—';
+  if (t.counterpartAccountNumber) {
+    const isSelf = t.counterpartEmail && t.counterpartEmail === currentUserEmail;
+    const arrow  = credit ? '←' : '→';
+    if (isSelf) {
+      // Internal: same user, show account number and "(your account)"
+      counterpartHtml = `<div class="tx-counterpart"><strong>${arrow} ${escHtml(t.counterpartAccountNumber)}</strong><br><span>your account</span></div>`;
+    } else {
+      // External: different user, show email
+      const email = t.counterpartEmail || t.counterpartAccountNumber;
+      counterpartHtml = `<div class="tx-counterpart"><strong>${arrow} ${escHtml(email)}</strong><br><span>${escHtml(t.counterpartAccountNumber)}</span></div>`;
+    }
+  }
+
+  const typeBadge = `<span class="badge badge-${t.type.toLowerCase()}">${t.type}</span>`;
+  const statusBadge = `<span class="badge badge-completed" style="font-size:0.65rem;">${escHtml(t.status || 'COMPLETED')}</span>`;
+
+  return `<tr>
+    <td style="color:var(--muted);font-size:0.78rem;white-space:nowrap;">${t.timestamp ? fmtDate(t.timestamp) : '—'}</td>
+    <td>${amountHtml}</td>
+    <td>${counterpartHtml}</td>
+    <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.84rem;">${escHtml(t.description || '—')}</td>
+    <td>${typeBadge}</td>
+    <td>${statusBadge}</td>
+    <td class="font-mono" style="font-size:0.84rem;">${money(t.balanceAfter)}</td>
+  </tr>`;
+}
+
+function applyTransactionFilter() { loadTransactions(); }
+function clearTransactionFilter() {
+  document.getElementById('filter-from').value = '';
+  document.getElementById('filter-to').value = '';
+  loadTransactions();
+}
+
+// ── Profile ───────────────────────────────────────────────────────────────────
+async function loadProfile() {
+  if (!currentUserId) return;
+  try {
+    const [user, accounts, txns] = await Promise.all([
+      apiFetch(`/api/users/${currentUserId}`),
+      apiFetch(`/api/accounts/user/${currentUserId}`),
+      apiFetch(`/api/transactions/user/${currentUserId}`).catch(() => [])
+    ]);
+
+    const initials = user.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+
+    // Avatar: show photo if set, else initials
+    const avatarInitials = document.getElementById('profile-avatar-initials');
+    const avatarImg      = document.getElementById('profile-avatar-img');
+    if (user.profilePicture) {
+      avatarImg.src = user.profilePicture;
+      avatarImg.style.display = 'block';
+      avatarInitials.style.display = 'none';
+    } else {
+      avatarInitials.textContent = initials;
+      avatarInitials.style.display = 'block';
+      avatarImg.style.display = 'none';
+    }
+
+    document.getElementById('profile-name').textContent  = user.name;
+    document.getElementById('profile-email').textContent = user.email;
+    document.getElementById('profile-account-count').textContent = `${accounts.length} account${accounts.length!==1?'s':''}`;
+    document.getElementById('profile-tx-count').textContent      = `${txns.length} transactions`;
+
+    // Personal info
+    document.getElementById('info-name').textContent    = user.name || '—';
+    document.getElementById('info-email').textContent   = user.email || '—';
+    document.getElementById('info-phone').textContent   = user.phone || '—';
+    document.getElementById('info-address').textContent = user.address || '—';
+    document.getElementById('info-since').textContent   = user.createdAt
+      ? new Date(user.createdAt).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' }) : '—';
+
+    // Account overview
+    const list = document.getElementById('profile-accounts-list');
+    if (!accounts.length) {
+      list.innerHTML = `<div class="empty-state"><p>No accounts yet.</p></div>`;
+    } else {
+      const totalBalance = accounts.reduce((s, a) => s + parseFloat(a.balance || 0), 0);
+      list.innerHTML = `
+        <div style="margin-bottom:16px;padding:14px;background:var(--surface-2);border-radius:10px;">
+          <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">Total Balance</div>
+          <div class="font-mono" style="font-size:1.4rem;font-weight:700;margin-top:2px;">${money(totalBalance)}</div>
+        </div>
+        ${accounts.map(a => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+          <div>
+            <div style="font-size:0.82rem;font-weight:600;font-variant-numeric:tabular-nums;">${escHtml(a.accountNumber)}</div>
+            <div style="font-size:0.7rem;color:var(--muted);margin-top:1px;">${a.createdAt ? new Date(a.createdAt).toLocaleDateString() : ''}</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span class="badge badge-${a.type.toLowerCase()}">${a.type}</span>
+            <span class="font-mono" style="font-size:0.88rem;">${money(a.balance)}</span>
+          </div>
+        </div>`).join('')}`;
+    }
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+async function handleProfilePicUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) { toast('Image must be under 2MB', 'error'); return; }
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const dataUrl = e.target.result;
+    try {
+      await apiFetch(`/api/users/${currentUserId}/profile-picture`, {
+        method: 'PATCH',
+        body: JSON.stringify({ profilePicture: dataUrl })
+      });
+      const avatarImg      = document.getElementById('profile-avatar-img');
+      const avatarInitials = document.getElementById('profile-avatar-initials');
+      avatarImg.src = dataUrl;
+      avatarImg.style.display = 'block';
+      avatarInitials.style.display = 'none';
+      // Also update nav avatar
+      document.getElementById('nav-avatar').style.backgroundImage = `url('${dataUrl}')`;
+      document.getElementById('nav-avatar').style.backgroundSize = 'cover';
+      document.getElementById('nav-avatar').textContent = '';
+      toast('Profile picture updated!');
+    } catch (err) { toast(err.message, 'error'); }
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── Security ──────────────────────────────────────────────────────────────────
+function escHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+(function boot() {
+  const token = getToken();
+  if (token) {
+    const payload = decodeJwt(token);
+    if (payload && payload.exp * 1000 > Date.now()) {
+      initSession({ token, userId: Number(payload.sub), name: payload.name, email: payload.email });
+      return;
+    }
+    clearToken();
+  }
+  document.getElementById('auth-overlay').classList.remove('hidden');
+})();
+</script>
+</body>
+</html>
