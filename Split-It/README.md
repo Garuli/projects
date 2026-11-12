@@ -16,13 +16,13 @@ Split a bill with friends. Scan the receipt with your phone, tick who had what, 
 
 ## What it does
 
-- **Custom avatars.** Everyone builds their own: a gradient colour (12), eyes (6), mouth (6) and a hair doodle (7), 3,024 combinations. Pick it at sign-up or change it on the Profile screen, and friends see it everywhere. Avatars are drawn with CSS and a tiny inline SVG, so there are no image files. Guests added by name get their initials.
 - **Reads receipts.** Take a photo or pick one from the gallery. The text is read in the browser (Tesseract OCR, bundled, nothing is uploaded) and turned into items, quantities, tip and tax. You always get an edit screen to fix mistakes.
 - **Optional AI scan.** Set `ANTHROPIC_API_KEY` and the server reads the receipt with a vision model first. The browser OCR is the fallback.
 - **Three ways to split.** Equally, by item (tap the names under each item) or by percentage. Tip and tax are shared in proportion. Totals are whole cents, so shares always add up to the bill exactly.
 - **Finds friends.** Share a friend code (`SP-XXXX`), a QR code or a link. On Android Chrome you can also pick contacts and match them by phone number.
 - **Joins a bill by code.** Every bill has a 6-character code and a QR. A friend who types or scans it sees their share.
 - **Tracks payments.** Everyone can mark their own share as paid, the owner can mark anyone. The bill settles when all shares are paid.
+- **Custom avatars.** Everyone builds their own: a gradient colour (12), eyes (6), mouth (6) and a hair doodle (7), 3,024 combinations. Pick it at sign-up or change it on the Profile screen, and friends see it everywhere. Avatars are drawn with CSS and a tiny inline SVG, so there are no image files. Guests added by name get their initials.
 
 ## Run it
 
