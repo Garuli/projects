@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shop | Tame Impala fan site</title>
+<meta name="description" content="A demo shop with a working cart. Nothing here is for sale.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header id="site-header"></header>
+<main id="main">
+
+<div class="wrap page-title"><h1>Shop (demo)</h1><p>A practice shop to show a working cart. For real merch, visit the official site.</p></div>
+
+<section class="block" style="padding-top:24px"><div class="wrap">
+  <p class="notice">Demo only: these products are made up and nothing can be bought. <a href="https://www.tameimpala.com" target="_blank" rel="noopener" style="color:#fff">Official store</a></p>
+  <div class="grid" id="shop"></div>
+</div></section>
+<div class="cart">
+  <button class="btn cart-btn" id="cart-btn" aria-expanded="false" aria-controls="cart-panel">🛒 Cart (<span id="cart-count">0</span>)</button>
+</div>
+<div class="cart-panel" id="cart-panel">
+  <ul id="cart-items"></ul>
+  <p style="margin-top:10px"><b>Total: <span id="cart-total">$0</span></b></p>
+  <button class="btn small" id="checkout" style="margin-top:8px">Demo checkout</button>
+  <p class="muted" id="cart-note" role="status"></p>
+</div>
+
+</main>
+<footer id="site-footer"></footer>
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

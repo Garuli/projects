@@ -8,8 +8,13 @@ __pycache__/
 *.db
 *.sqlite3
 .env
+.secret_key
 
 # macOS / editors
 .DS_Store
 .idea/
 .vscode/
+
+# archives
+*.zip
+_tmp/

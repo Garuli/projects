@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home | Tame Impala fan site</title>
+<meta name="description" content="An unofficial fan site for Tame Impala: music player, albums, live videos, tours and films.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header id="site-header"></header>
+<main id="main">
+
+<section class="hero"><div class="wrap">
+  <div>
+    <p class="eyebrow">Unofficial fan site · Perth, Australia</p>
+    <h1>Tame Impala</h1>
+    <p class="lead">The psychedelic project of Kevin Parker. Play the songs right here, watch live sets, and explore five albums from Innerspeaker to Deadbeat.</p>
+    <div class="row"><a class="btn" href="music.html">▶ Open the player</a><a class="btn ghost" href="live.html">Watch live</a></div>
+  </div>
+  <div class="stage"><div class="tilt">
+    <img src="https://thumb.wikimedia.org/wikipedia/en/thumb/f/f1/DeadbeatTameImpala.jpeg/500px-DeadbeatTameImpala.jpeg" alt="Deadbeat album cover" onerror="this.removeAttribute('src')">
+    <span class="tag">Deadbeat · 2025</span></div></div>
+</div></section>
+
+<section class="block"><div class="wrap">
+  <div class="head"><h2>Albums</h2><p>Five studio albums, newest first.</p></div>
+  <div class="grid" id="home-albums"></div>
+</div></section>
+
+<section class="block alt"><div class="wrap">
+  <div class="head"><h2>Explore</h2></div>
+  <div class="grid">
+    <a class="card" href="music.html" style="text-decoration:none"><div class="pad"><h3>🎧 Music player</h3><p class="muted">14 songs with video, a playlist, next and previous.</p></div></a>
+    <a class="card" href="live.html" style="text-decoration:none"><div class="pad"><h3>🎤 Live</h3><p class="muted">Coachella, Glastonbury, SNL and a Tiny Desk concert.</p></div></a>
+    <a class="card" href="films.html" style="text-decoration:none"><div class="pad"><h3>🎞 Short films</h3><p class="muted">Behind-the-scenes clips, from 54 seconds to 15 minutes.</p></div></a>
+    <a class="card" href="tours.html" style="text-decoration:none"><div class="pad"><h3>🗓 Tours</h3><p class="muted">Upcoming 2027 dates and every tour so far.</p></div></a>
+  </div>
+</div></section>
+
+<section class="block"><div class="wrap">
+  <div class="head"><h2>Next shows</h2><p>The 2027 UK and Europe run. <a href="tours.html">See all dates</a></p></div>
+  <ul id="home-next" style="list-style:none;display:grid;gap:8px"></ul>
+</div></section>
+
+</main>
+<footer id="site-footer"></footer>
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

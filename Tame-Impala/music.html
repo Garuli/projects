@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Music player | Tame Impala fan site</title>
+<meta name="description" content="Play Tame Impala songs and official videos right on the page.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header id="site-header"></header>
+<main id="main">
+
+<div class="wrap page-title"><h1>Music</h1><p>Pick a song and it plays on this page. These are the official uploads, played through YouTube.</p></div>
+
+<section class="block" style="padding-top:24px"><div class="wrap player">
+  <div>
+    <div class="screen"><div id="yt"></div>
+      <div class="msg" id="msg" role="alert"></div></div>
+    <div class="controls">
+      <div class="now" id="now" aria-live="polite">Loading…</div>
+      <div class="bar"><span id="tcur">0:00</span><input id="seek" type="range" min="0" max="1000" value="0" aria-label="Seek"><span id="tdur">0:00</span></div>
+      <div class="ctl">
+        <button id="prev" aria-label="Previous song">⏮</button>
+        <button id="play" class="main" aria-label="Play">▶</button>
+        <button id="next" aria-label="Next song">⏭</button>
+        <button id="repeat" aria-label="Repeat song" aria-pressed="false">🔁</button>
+      </div>
+    </div>
+  </div>
+  <ol class="list" id="list" aria-label="Playlist"></ol>
+</div></section>
+
+</main>
+<footer id="site-footer"></footer>
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
